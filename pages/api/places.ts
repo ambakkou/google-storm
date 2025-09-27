@@ -7,8 +7,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const loc = `${lat},${lng}`;
 
     // Decide query: clinics/food banks via Text Search; shelters usually from seeds
-    const textQuery = q || (type === 'clinic' ? 'free clinic' :
-                            type === 'food_bank' ? 'food bank' : '');
+    const textQuery = q || (type === 'clinic' ? 'free clinic emergency medical' :
+                            type === 'food_bank' ? 'food bank food pantry emergency food' : '');
 
     if (!textQuery) return res.status(200).json({ results: [] });
 
@@ -76,6 +76,28 @@ function generateMockPlaces(type: string, lat: string, lng: string) {
         openNow: false,
         source: 'mock',
         url: '#'
+      },
+      {
+        id: 'mock-food-3',
+        name: 'Emergency Food Distribution Center',
+        type: 'food_bank',
+        address: '450 SW 8th St, Miami, FL 33130',
+        lat: baseLat + 0.003,
+        lng: baseLng + 0.008,
+        openNow: true,
+        source: 'mock',
+        url: '#'
+      },
+      {
+        id: 'mock-food-4',
+        name: 'Coral Gables Food Bank',
+        type: 'food_bank',
+        address: '2801 SW 37th Ave, Coral Gables, FL 33133',
+        lat: baseLat - 0.008,
+        lng: baseLng - 0.003,
+        openNow: false,
+        source: 'mock',
+        url: '#'
       }
     ];
   }
@@ -100,6 +122,28 @@ function generateMockPlaces(type: string, lat: string, lng: string) {
         address: '1500 NW 7th St, Miami, FL 33125',
         lat: baseLat - 0.012,
         lng: baseLng + 0.012,
+        openNow: false,
+        source: 'mock',
+        url: '#'
+      },
+      {
+        id: 'mock-clinic-3',
+        name: 'Emergency Medical Services',
+        type: 'clinic',
+        address: '320 Biscayne Blvd, Miami, FL 33132',
+        lat: baseLat + 0.005,
+        lng: baseLng + 0.002,
+        openNow: true,
+        source: 'mock',
+        url: '#'
+      },
+      {
+        id: 'mock-clinic-4',
+        name: 'Homeless Health Care Center',
+        type: 'clinic',
+        address: '2200 NW 7th Ave, Miami, FL 33127',
+        lat: baseLat - 0.006,
+        lng: baseLng - 0.010,
         openNow: false,
         source: 'mock',
         url: '#'

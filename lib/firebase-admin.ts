@@ -29,6 +29,13 @@ export function initializeFirebaseAdmin() {
       }
     }
 
+    // For development, try to use default credentials (if Firebase CLI is authenticated)
+    if (!config.credential) {
+      console.log('No service account credentials found. Using default credentials (requires Firebase CLI authentication)');
+      // This will use default credentials if Firebase CLI is authenticated
+      // or environment variables like GOOGLE_APPLICATION_CREDENTIALS are set
+    }
+
     app = initializeApp(config);
     console.log('Firebase Admin initialized with project:', config.projectId);
   } else {
@@ -38,10 +45,16 @@ export function initializeFirebaseAdmin() {
   return app;
 }
 
-// Get Firestore instance
+// Get Firestore instance with error handling
 export function getFirestoreInstance() {
   if (!getApps().length) {
     initializeFirebaseAdmin();
   }
-  return getFirestore();
+  
+  try {
+    return getFirestore();
+  } catch (error) {
+    console.error('Failed to get Firestore instance:', error);
+    throw new Error('Firebase not properly configured. Please check your service account credentials.');
+  }
 }
