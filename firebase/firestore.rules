@@ -1,0 +1,25 @@
+// Read: public resources are readable; pending only by admins.
+// Write: pending allowed for authed users; approving requires admin.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.admin == true;
+    }
+
+    match /resources/{doc} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /pendingResources/{doc} {
+      allow read: if isAdmin();
+      allow create: if request.auth != null;
+      allow update, delete: if isAdmin();
+    }
+
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+  }
+}

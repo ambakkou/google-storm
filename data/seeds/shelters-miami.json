@@ -1,0 +1,4 @@
+[
+    {"id":"seed-shelter-1","name":"Miami-Dade Shelter A","type":"shelter","address":"123 Example St, Miami, FL","lat":25.774,"lng":-80.193,"openNow":false,"source":"seed"},
+    {"id":"seed-shelter-2","name":"Miami-Dade Shelter B","type":"shelter","address":"200 Example Ave, Miami, FL","lat":25.762,"lng":-80.205,"openNow":false,"source":"seed"}
+]
