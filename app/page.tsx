@@ -82,9 +82,10 @@ export default function HomePage() {
       let centerLat = userLocation?.lat || 25.774
       let centerLng = userLocation?.lng || -80.193
 
-      // Handle shelter category - load from seeds
+      // Handle shelter category - load from seeds and approved resources
       if (intent.categories?.includes("shelter")) {
         try {
+          // Load seed data
           const shelterResponse = await fetch("/api/shelters")
           if (shelterResponse.ok) {
             const shelterData = await shelterResponse.json()
@@ -128,6 +129,29 @@ export default function HomePage() {
               }
             ]
             allMarkers.push(...fallbackShelters)
+          }
+
+          // Load approved community resources for shelters
+          try {
+            const resourcesResponse = await fetch("/api/resources")
+            if (resourcesResponse.ok) {
+              const { resources } = await resourcesResponse.json()
+              const shelterResources = resources
+                .filter((resource: any) => resource.type === "shelter")
+                .map((resource: any) => ({
+                  id: `community-${resource.id}`,
+                  name: resource.name,
+                  type: resource.type as MapMarker["type"],
+                  lat: resource.lat,
+                  lng: resource.lng,
+                  openNow: null,
+                  source: "community",
+                  address: resource.address,
+                }))
+              allMarkers.push(...shelterResources)
+            }
+          } catch (error) {
+            console.error("Failed to load community resources:", error)
           }
         } catch (error) {
           console.error("Failed to load shelter data:", error)
@@ -175,6 +199,31 @@ export default function HomePage() {
         } catch (error) {
           console.error(`Failed to load ${type} data:`, error)
         }
+      }
+
+      // Load approved community resources for all types
+      try {
+        const resourcesResponse = await fetch("/api/resources")
+        if (resourcesResponse.ok) {
+          const { resources } = await resourcesResponse.json()
+          const communityResources = resources
+            .filter((resource: any) => 
+              intent.categories?.includes(resource.type)
+            )
+            .map((resource: any) => ({
+              id: `community-${resource.id}`,
+              name: resource.name,
+              type: resource.type as MapMarker["type"],
+              lat: resource.lat,
+              lng: resource.lng,
+              openNow: null,
+              source: "community",
+              address: resource.address,
+            }))
+          allMarkers.push(...communityResources)
+        }
+      } catch (error) {
+        console.error("Failed to load community resources:", error)
       }
 
       setMarkers(allMarkers)
@@ -266,6 +315,8 @@ export default function HomePage() {
           name: resource.name,
           type: resource.type,
           address: resource.address,
+          lat: resource.lat,
+          lng: resource.lng,
           notes: resource.notes,
           submittedBy: "user", // In a real app, this would come from auth
         }),
@@ -321,7 +372,7 @@ export default function HomePage() {
 
       {/* Map Panel */}
       <div className="flex-1 relative">
-        <MapPanel markers={markers} center={mapCenter} userLocation={userLocation} />
+        <MapPanel markers={markers} center={mapCenter} userLocation={userLocation || undefined} />
 
         {/* Floating Add Resource Button */}
         <Button

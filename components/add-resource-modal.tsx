@@ -421,10 +421,17 @@ export function AddResourceModal({ isOpen, onClose, onSubmit }: AddResourceModal
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    console.log('=== FORM SUBMISSION ===')
+    console.log('Form data before geocoding:', formData)
+    
     // If we don't have coordinates from autocomplete, try to geocode the address
     let coords = { lat: formData.lat || 0, lng: formData.lng || 0 }
-    if (!coords.lat && !coords.lng) {
+    console.log('Initial coords:', coords)
+    
+    if (!coords.lat || !coords.lng || (coords.lat === 0 && coords.lng === 0)) {
+      console.log('No valid coordinates, attempting geocoding for:', formData.address)
       const geocodedCoords = await geocodeAddress(formData.address)
+      console.log('Geocoded result:', geocodedCoords)
       coords = { lat: geocodedCoords?.lat || 0, lng: geocodedCoords?.lng || 0 }
     }
     
@@ -433,6 +440,9 @@ export function AddResourceModal({ isOpen, onClose, onSubmit }: AddResourceModal
       lat: coords.lat,
       lng: coords.lng
     }
+    
+    console.log('Final resource data:', resourceData)
+    console.log('=== SUBMITTING TO PARENT ===')
     
     onSubmit(resourceData)
     setFormData({ name: "", type: "shelter", address: "", notes: "" })
