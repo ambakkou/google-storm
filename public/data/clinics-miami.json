@@ -1,0 +1,103 @@
+[
+  {
+    "id": "clinic-1",
+    "name": "Community Health of South Florida – Doris Ison Health Center",
+    "type": "clinic",
+    "address": "10300 SW 216th St, Miami, FL 33190",
+    "lat": 25.566544,
+    "lng": -80.358883,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "clinic-2",
+    "name": "Camillus Health Concern",
+    "type": "clinic",
+    "address": "336 NW 5th St, Miami, FL 33128",
+    "lat": 25.77854,
+    "lng": -80.20049,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "clinic-3",
+    "name": "Borinquen Medical Centers (Main)",
+    "type": "clinic",
+    "address": "3601 Federal Hwy, Miami, FL 33137",
+    "lat": 25.8105,
+    "lng": -80.1895,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "clinic-4",
+    "name": "Care Resource – Midtown Miami",
+    "type": "clinic",
+    "address": "3510 Biscayne Blvd, Miami, FL 33137",
+    "lat": 25.80961,
+    "lng": -80.18997,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "clinic-5",
+    "name": "Jessie Trice Community Health System (Main Center)",
+    "type": "clinic",
+    "address": "5361 NW 22nd Ave, Miami, FL 33142",
+    "lat": 25.8239,
+    "lng": -80.2335,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "clinic-6",
+    "name": "Good News Care Center",
+    "type": "clinic",
+    "address": "101 S Redland Rd, Florida City, FL 33034",
+    "lat": 25.4479,
+    "lng": -80.4749,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "clinic-7",
+    "name": "Miami Beach Community Health Center – Alton Road",
+    "type": "clinic",
+    "address": "710 Alton Rd, Miami Beach, FL 33139",
+    "lat": 25.77722,
+    "lng": -80.14122,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "clinic-8",
+    "name": "Citrus Health Network – Main Center",
+    "type": "clinic",
+    "address": "4175 W 20th Ave, Hialeah, FL 33012",
+    "lat": 25.859734,
+    "lng": -80.321653,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "clinic-9",
+    "name": "Banyan Community Health Center – Flagler Family Clinic",
+    "type": "clinic",
+    "address": "3733 W Flagler St, Miami, FL 33134",
+    "lat": 25.7702,
+    "lng": -80.2563,
+    "openNow": false,
+    "source": "static"
+  }
+  ,
+  {
+    "id": "clinic-10",
+    "name": "FIU Mobile Health Center",
+    "type": "clinic",
+    "address": "11200 SW 8th St, Miami, FL 33199",
+    "lat": 25.7569,
+    "lng": -80.3763,
+    "openNow": false,
+    "source": "static"
+  }
+]

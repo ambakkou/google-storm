@@ -6,17 +6,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const key = process.env.GCP_SERVER_MAPS_KEY || process.env.NEXT_PUBLIC_MAPS_API_KEY
 
   const defaultCity = 'Miami, FL'
-  const queryText = String(q || `emergency shelter homeless shelter near ${defaultCity}`)
+  const queryText = String(q || `clinic free clinic urgent care emergency medical near ${defaultCity}`)
 
     if (!key) {
-      // return a small set of mock shelters
       return res.status(200).json({ results: [
-        { id: 'mock-shelter-1', name: 'Central Emergency Shelter', type: 'shelter', address: '100 NW 1st St, Miami, FL', lat: 25.784, lng: -80.195, openNow: true, source: 'mock' },
-        { id: 'mock-shelter-2', name: 'Downtown Shelter', type: 'shelter', address: '250 NE 2nd Ave, Miami, FL', lat: 25.776, lng: -80.191, openNow: false, source: 'mock' }
+        { id: 'mock-clinic-1', name: 'Miami Free Clinic', type: 'clinic', address: '1800 NW 10th Ave, Miami, FL', lat: 25.782, lng: -80.196, openNow: true, source: 'mock' },
+        { id: 'mock-clinic-2', name: 'Community Health Center', type: 'clinic', address: '1500 NW 7th St, Miami, FL', lat: 25.772, lng: -80.188, openNow: false, source: 'mock' }
       ] })
     }
 
-  const url = new URL('https://maps.googleapis.com/maps/api/place/textsearch/json')
+    const url = new URL('https://maps.googleapis.com/maps/api/place/textsearch/json')
     url.searchParams.set('query', queryText)
   url.searchParams.set('location', `${lat},${lng}`)
   url.searchParams.set('radius', String(radius || '5000'))
@@ -27,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const results = (data.results || []).map((p: any) => ({
       id: p.place_id,
       name: p.name,
-      type: 'shelter',
+      type: 'clinic',
       address: p.formatted_address,
       lat: p.geometry?.location?.lat,
       lng: p.geometry?.location?.lng,
@@ -37,8 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     return res.status(200).json({ results })
   } catch (e:any) {
-    console.error('shelters error', e)
+    console.error('clinics error', e)
     return res.status(500).json({ error: String(e) })
   }
 }
-
