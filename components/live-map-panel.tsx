@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MapPin, Clock, Loader2, Play, Pause, RotateCcw, Zap } from "lucide-react"
+import { MapPin, Clock, Loader2, Play, Pause, RotateCcw, Zap, X } from "lucide-react"
 import type { MapMarker } from "@/app/page"
 import { Loader } from "@googlemaps/js-api-loader"
 import { LiveHurricaneService, LiveHurricaneTrack, HurricaneMovementData } from "@/lib/live-hurricane-service"
@@ -21,6 +21,8 @@ interface LiveMapPanelProps {
   center: { lat: number; lng: number }
   userLocation?: { lat: number; lng: number }
   hurricaneMode?: boolean
+  showResultsPanel?: boolean
+  onCloseResultsPanel?: () => void
 }
 
 interface AnimatedMarker {
@@ -30,7 +32,7 @@ interface AnimatedMarker {
   windCircle: google.maps.Circle
 }
 
-export function LiveMapPanel({ markers, center, userLocation, hurricaneMode = false }: LiveMapPanelProps) {
+export function LiveMapPanel({ markers, center, userLocation, hurricaneMode = false, showResultsPanel = true, onCloseResultsPanel }: LiveMapPanelProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<google.maps.Map | null>(null)
   const markersRef = useRef<google.maps.Marker[]>([])
@@ -725,12 +727,24 @@ export function LiveMapPanel({ markers, center, userLocation, hurricaneMode = fa
       )}
 
       {/* Regular resource markers info panel */}
-      {!hurricaneMode && markers.length > 0 && (
+      {!hurricaneMode && markers.length > 0 && showResultsPanel && (
         <div className="absolute top-4 left-4 max-w-sm">
           <Card className="p-4 bg-card/95 backdrop-blur-sm border shadow-lg">
-            <div className="mb-3">
-              <h3 className="font-semibold text-card-foreground mb-1">Found {markers.length} Resource{markers.length !== 1 ? 's' : ''}</h3>
-              <p className="text-xs text-muted-foreground">Click markers for details</p>
+            <div className="mb-3 flex items-start justify-between">
+              <div>
+                <h3 className="font-semibold text-card-foreground mb-1">Found {markers.length} Resource{markers.length !== 1 ? 's' : ''}</h3>
+                <p className="text-xs text-muted-foreground">Click markers for details</p>
+              </div>
+              {onCloseResultsPanel && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onCloseResultsPanel}
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
             
             <div className="space-y-2 max-h-48 overflow-y-auto">

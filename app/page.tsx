@@ -54,6 +54,7 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [lastSearchResults, setLastSearchResults] = useState(0)
   const [isUsingAI, setIsUsingAI] = useState(false)
+  const [showResultsPanel, setShowResultsPanel] = useState(true)
   const { toast } = useToast()
   const [weatherNotificationService] = useState(() => WeatherNotificationService.getInstance())
 
@@ -284,6 +285,9 @@ export default function HomePage() {
       setMarkers(allMarkers)
       setMapCenter({ lat: centerLat, lng: centerLng })
       setLastSearchResults(allMarkers.length)
+      if (allMarkers.length > 0) {
+        setShowResultsPanel(true)
+      }
       
       if (allMarkers.length > 0) {
         toast({
@@ -350,6 +354,7 @@ export default function HomePage() {
             setMarkers(shelterMarkers)
             if (shelterMarkers.length > 0) {
               setMapCenter({ lat: shelterMarkers[0].lat, lng: shelterMarkers[0].lng })
+              setShowResultsPanel(true)
             }
           }
         } catch (error) {
@@ -458,6 +463,8 @@ export default function HomePage() {
           userLocation={userLocation || undefined} 
           hurricaneMode={hurricaneMode}
           densityZones={densityZones}
+          showResultsPanel={showResultsPanel}
+          onCloseResultsPanel={() => setShowResultsPanel(false)}
         />
 
         {/* Floating Add Resource Button */}
