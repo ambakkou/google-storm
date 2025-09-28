@@ -6,19 +6,52 @@ import { Badge } from "@/components/ui/badge"
 import { MapPin, Clock, Loader2 } from "lucide-react"
 import type { MapMarker } from "@/app/page"
 import { Loader } from "@googlemaps/js-api-loader"
+import { HurricaneTrack, HurricanePosition } from "@/lib/hurricane-service"
 
 interface MapPanelProps {
   markers: MapMarker[]
   center: { lat: number; lng: number }
   userLocation?: { lat: number; lng: number }
+  hurricaneMode?: boolean
 }
 
-export function MapPanel({ markers, center, userLocation }: MapPanelProps) {
+export function MapPanel({ markers, center, userLocation, hurricaneMode = false }: MapPanelProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<google.maps.Map | null>(null)
   const markersRef = useRef<google.maps.Marker[]>([])
+  const hurricaneMarkersRef = useRef<google.maps.Marker[]>([])
+  const hurricanePathsRef = useRef<google.maps.Polyline[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [mapError, setMapError] = useState<string | null>(null)
+  const [hurricaneData, setHurricaneData] = useState<HurricaneTrack[]>([])
+  const [hurricaneLoading, setHurricaneLoading] = useState(false)
+
+  // Fetch hurricane data
+  const fetchHurricaneData = async () => {
+    try {
+      setHurricaneLoading(true)
+      const response = await fetch('/api/hurricanes?near_florida=true')
+      const data = await response.json()
+      setHurricaneData(data.hurricanes || [])
+    } catch (error) {
+      console.error('Failed to fetch hurricane data:', error)
+    } finally {
+      setHurricaneLoading(false)
+    }
+  }
+
+  // Fetch hurricane data when hurricane mode is enabled
+  useEffect(() => {
+    if (hurricaneMode) {
+      fetchHurricaneData()
+      // Refresh hurricane data every 5 minutes
+      const interval = setInterval(fetchHurricaneData, 5 * 60 * 1000)
+      return () => clearInterval(interval)
+    } else {
+      // Clear hurricane data when mode is disabled
+      setHurricaneData([])
+    }
+  }, [hurricaneMode])
 
   useEffect(() => {
     const initializeMap = async () => {
@@ -183,6 +216,149 @@ export function MapPanel({ markers, center, userLocation }: MapPanelProps) {
     }
   }, [markers, center, userLocation])
 
+  // Handle hurricane markers and paths
+  useEffect(() => {
+    if (!mapInstanceRef.current || !hurricaneMode) {
+      // Clear hurricane markers when mode is disabled
+      hurricaneMarkersRef.current.forEach(marker => marker.setMap(null))
+      hurricaneMarkersRef.current = []
+      hurricanePathsRef.current.forEach(path => path.setMap(null))
+      hurricanePathsRef.current = []
+      return
+    }
+
+    // Clear existing hurricane markers and paths
+    hurricaneMarkersRef.current.forEach(marker => marker.setMap(null))
+    hurricaneMarkersRef.current = []
+    hurricanePathsRef.current.forEach(path => path.setMap(null))
+    hurricanePathsRef.current = []
+
+    // Add hurricane markers and paths
+    hurricaneData.forEach(hurricane => {
+      // Add current position marker
+      const marker = new google.maps.Marker({
+        position: {
+          lat: hurricane.currentPosition.lat,
+          lng: hurricane.currentPosition.lng
+        },
+        map: mapInstanceRef.current,
+        title: `${hurricane.name} - ${hurricane.currentPosition.windSpeed} mph`,
+        icon: {
+          url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+            <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="20" cy="20" r="18" fill="${getHurricaneColor(hurricane.currentPosition.category || 0)}" stroke="white" stroke-width="3"/>
+              <text x="20" y="26" text-anchor="middle" fill="white" font-size="16" font-weight="bold">🌀</text>
+            </svg>
+          `)}`,
+          scaledSize: new google.maps.Size(40, 40),
+        },
+        zIndex: 2000 // Higher than resource markers
+      })
+
+      // Add info window for hurricane
+      const infoWindow = new google.maps.InfoWindow({
+        content: `
+          <div class="p-3 min-w-48">
+            <h3 class="font-semibold text-sm mb-1">${hurricane.name}</h3>
+            <div class="flex items-center gap-2 mb-2">
+              <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getHurricaneCategoryClass(hurricane.currentPosition.category || 0)}">
+                ${getHurricaneCategoryLabel(hurricane.currentPosition.category || 0)}
+              </span>
+            </div>
+            <p class="text-xs text-gray-600 mb-1">Wind Speed: ${hurricane.currentPosition.windSpeed} mph</p>
+            ${hurricane.currentPosition.pressure ? `<p class="text-xs text-gray-600 mb-1">Pressure: ${hurricane.currentPosition.pressure} mb</p>` : ''}
+            <p class="text-xs text-gray-600">Status: ${hurricane.status}</p>
+          </div>
+        `
+      })
+
+      marker.addListener('click', () => {
+        // Close all other info windows first
+        hurricaneMarkersRef.current.forEach(m => {
+          if (m !== marker) {
+            const infoWindow = m.get('infoWindow')
+            if (infoWindow) infoWindow.close()
+          }
+        })
+        infoWindow.open(mapInstanceRef.current, marker)
+      })
+
+      marker.set('infoWindow', infoWindow)
+      hurricaneMarkersRef.current.push(marker)
+
+      // Add forecast path (dotted line)
+      if (hurricane.forecastPositions.length > 0) {
+        const pathCoordinates = [
+          { lat: hurricane.currentPosition.lat, lng: hurricane.currentPosition.lng },
+          ...hurricane.forecastPositions.map(pos => ({ lat: pos.lat, lng: pos.lng }))
+        ]
+
+        const path = new google.maps.Polyline({
+          path: pathCoordinates,
+          geodesic: true,
+          strokeColor: getHurricaneColor(hurricane.currentPosition.category || 0),
+          strokeOpacity: 0.8,
+          strokeWeight: 3,
+          icons: [{
+            icon: {
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 3,
+              strokeColor: getHurricaneColor(hurricane.currentPosition.category || 0),
+              strokeOpacity: 1,
+              strokeWeight: 2,
+            },
+            offset: '0%',
+            repeat: '20px'
+          }],
+          map: mapInstanceRef.current
+        })
+
+        hurricanePathsRef.current.push(path)
+      }
+
+      // Add historical path (solid line)
+      if (hurricane.historicalPositions.length > 0) {
+        const historicalPath = [
+          ...hurricane.historicalPositions.map(pos => ({ lat: pos.lat, lng: pos.lng })),
+          { lat: hurricane.currentPosition.lat, lng: hurricane.currentPosition.lng }
+        ]
+
+        const historicalLine = new google.maps.Polyline({
+          path: historicalPath,
+          geodesic: true,
+          strokeColor: getHurricaneColor(hurricane.currentPosition.category || 0),
+          strokeOpacity: 0.6,
+          strokeWeight: 2,
+          map: mapInstanceRef.current
+        })
+
+        hurricanePathsRef.current.push(historicalLine)
+      }
+    })
+
+    // Adjust map bounds to include hurricanes if in hurricane mode
+    if (hurricaneData.length > 0) {
+      const bounds = new google.maps.LatLngBounds()
+      
+      // Add user location if available
+      if (userLocation) {
+        bounds.extend({ lat: userLocation.lat, lng: userLocation.lng })
+      }
+      
+      // Add hurricane positions
+      hurricaneData.forEach(hurricane => {
+        bounds.extend({ lat: hurricane.currentPosition.lat, lng: hurricane.currentPosition.lng })
+        hurricane.forecastPositions.forEach(pos => {
+          bounds.extend({ lat: pos.lat, lng: pos.lng })
+        })
+      })
+      
+      if (!bounds.isEmpty()) {
+        mapInstanceRef.current.fitBounds(bounds)
+      }
+    }
+  }, [hurricaneData, hurricaneMode, userLocation])
+
   const getMarkerIcon = (type: MapMarker["type"]) => {
     const colors = {
       shelter: '#dc2626', // red
@@ -242,6 +418,39 @@ export function MapPanel({ markers, center, userLocation }: MapPanelProps) {
         return "bg-green-100 text-green-800"
       default:
         return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const getHurricaneColor = (category: number): string => {
+    switch (category) {
+      case 5: return '#8B0000' // Dark red
+      case 4: return '#FF0000' // Red
+      case 3: return '#FF8C00' // Orange
+      case 2: return '#FFD700' // Gold
+      case 1: return '#FFFF00' // Yellow
+      default: return '#00FF00' // Green (tropical storm)
+    }
+  }
+
+  const getHurricaneCategoryLabel = (category: number): string => {
+    switch (category) {
+      case 5: return 'Category 5'
+      case 4: return 'Category 4'
+      case 3: return 'Category 3'
+      case 2: return 'Category 2'
+      case 1: return 'Category 1'
+      default: return 'Tropical Storm'
+    }
+  }
+
+  const getHurricaneCategoryClass = (category: number): string => {
+    switch (category) {
+      case 5: return 'bg-red-900 text-white'
+      case 4: return 'bg-red-800 text-white'
+      case 3: return 'bg-orange-600 text-white'
+      case 2: return 'bg-yellow-500 text-black'
+      case 1: return 'bg-yellow-300 text-black'
+      default: return 'bg-green-500 text-white'
     }
   }
 
@@ -317,8 +526,34 @@ export function MapPanel({ markers, center, userLocation }: MapPanelProps) {
         </div>
       )}
 
+      {/* Hurricane Info Panel */}
+      {hurricaneMode && hurricaneData.length > 0 && (
+        <div className="absolute top-16 left-4 max-w-sm z-20">
+          <Card className="p-4 bg-orange-50/95 backdrop-blur-sm border-orange-200 shadow-lg">
+            <div className="mb-3">
+              <h3 className="font-semibold text-orange-900 mb-1 flex items-center gap-2">
+                🌀 Active Hurricanes ({hurricaneData.length})
+              </h3>
+              <p className="text-xs text-orange-700">Click markers for details</p>
+            </div>
+            
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {hurricaneData.map((hurricane) => (
+                <div key={hurricane.id} className="flex items-center gap-2 p-2 rounded bg-orange-100/50 hover:bg-orange-100/70 transition-colors">
+                  <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: getHurricaneColor(hurricane.currentPosition.category || 0) }}></div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-orange-900 truncate">{hurricane.name}</p>
+                    <p className="text-xs text-orange-700">{getHurricaneCategoryLabel(hurricane.currentPosition.category || 0)} - {hurricane.currentPosition.windSpeed} mph</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
+
       {/* Resource Summary Panel */}
-      {markers.length > 0 && (
+      {!hurricaneMode && markers.length > 0 && (
         <div className="absolute top-16 left-4 max-w-sm">
           <Card className="p-4 bg-card/95 backdrop-blur-sm border shadow-lg">
             <div className="mb-3">

@@ -17,14 +17,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(200).json({ resources: pendingResources });
   } catch (error: any) {
     console.error('Error fetching pending resources:', error);
-    
+
     // If Firebase is not configured, return empty array
-    if (error.message.includes('Firebase not properly configured') || 
+    if (error.message.includes('Firebase not properly configured') ||
         error.message.includes('Could not load the default credentials')) {
       console.warn('Firebase not configured, returning empty pending resources array');
       return res.status(200).json({ resources: [] });
     }
-    
+
     res.status(500).json({ error: error.message });
   }
 }
