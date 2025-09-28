@@ -5,6 +5,11 @@ import { Analytics } from '@vercel/analytics/next'
 import { NextAuthSessionProvider } from '@/components/providers/session-provider'
 import './globals.css'
 
+// Import test utilities for development
+if (process.env.NODE_ENV === 'development') {
+  import('@/lib/weather-test-utils')
+}
+
 export const metadata: Metadata = {
   title: 'Google Storm - Crisis Resource Finder',
   description: 'Find emergency shelters, food banks, and clinics in your area during crisis situations.',

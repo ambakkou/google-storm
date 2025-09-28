@@ -6,6 +6,7 @@ interface NotificationSettings {
   enableSevereWeatherAlerts: boolean
   enableModerateWeatherAlerts: boolean
   alertFrequency: 'immediate' | 'hourly' | 'daily'
+  testMode?: boolean
 }
 
 interface NotificationState {
@@ -29,7 +30,7 @@ export class WeatherNotificationService {
         enablePushNotifications: true,
         enableHurricaneAlerts: true,
         enableSevereWeatherAlerts: true,
-        enableModerateWeatherAlerts: false,
+        enableModerateWeatherAlerts: true,
         alertFrequency: 'immediate',
       },
     }
