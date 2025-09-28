@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Card } from "@/components/ui/card"
-import { Send, AlertTriangle } from "lucide-react"
+import { Send, AlertTriangle, CloudRain, Settings, Wind } from "lucide-react"
+import { WeatherPanel } from "@/components/weather-panel"
+import { WeatherSettingsModal } from "@/components/weather-settings-modal"
 
 interface ChatMessage {
   id: string
@@ -19,13 +21,16 @@ interface ChatMessage {
 interface ChatPanelProps {
   onSubmitChat: (text: string) => void
   onEmergencyToggle: (enabled: boolean) => void
+  onHurricaneToggle: (enabled: boolean) => void
   emergencyMode: boolean
+  hurricaneMode: boolean
   isLoading?: boolean
   lastSearchResults?: number
   isUsingAI?: boolean
+  userLocation?: { lat: number; lng: number } | null
 }
 
-export function ChatPanel({ onSubmitChat, onEmergencyToggle, emergencyMode, isLoading = false, lastSearchResults = 0, isUsingAI = false }: ChatPanelProps) {
+export function ChatPanel({ onSubmitChat, onEmergencyToggle, onHurricaneToggle, emergencyMode, hurricaneMode, isLoading = false, lastSearchResults = 0, isUsingAI = false, userLocation }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "1",
@@ -81,7 +86,7 @@ export function ChatPanel({ onSubmitChat, onEmergencyToggle, emergencyMode, isLo
         <h1 className="text-2xl font-bold text-foreground mb-4">Google Storm</h1>
 
         {/* Emergency Mode Toggle */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <AlertTriangle className={`w-5 h-5 ${emergencyMode ? "text-destructive" : "text-muted-foreground"}`} />
             <span className="text-sm font-medium">Emergency Mode</span>
@@ -92,7 +97,37 @@ export function ChatPanel({ onSubmitChat, onEmergencyToggle, emergencyMode, isLo
             className="data-[state=checked]:bg-destructive"
           />
         </div>
+
+        {/* Hurricane Display Toggle */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Wind className={`w-5 h-5 ${hurricaneMode ? "text-orange-600" : "text-muted-foreground"}`} />
+            <span className="text-sm font-medium">Hurricane Display</span>
+          </div>
+          <Switch
+            checked={hurricaneMode}
+            onCheckedChange={onHurricaneToggle}
+            className="data-[state=checked]:bg-orange-600"
+          />
+        </div>
+
+        {/* Weather Settings Button */}
+        <div className="flex justify-center mt-4">
+          <WeatherSettingsModal>
+            <Button variant="outline" size="sm" className="w-full">
+              <Settings className="w-4 h-4 mr-2" />
+              Weather Alert Settings
+            </Button>
+          </WeatherSettingsModal>
+        </div>
       </div>
+
+      {/* Weather Panel - Fixed at top */}
+      {userLocation && (
+        <div className="p-4 border-b border-border bg-background sticky top-0 z-10">
+          <WeatherPanel lat={userLocation.lat} lng={userLocation.lng} />
+        </div>
+      )}
 
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
