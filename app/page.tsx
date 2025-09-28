@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { ChatPanel } from "@/components/chat-panel"
 import { MapPanel } from "@/components/map-panel"
 import { AddResourceModal } from "@/components/add-resource-modal"
+import { CrowdDensityOverlay } from "@/components/crowd-density-overlay"
 import { WeatherAlertBanner } from "@/components/weather-alert-banner"
 import { Button } from "@/components/ui/button"
 import { Toaster } from "@/components/ui/toaster"
@@ -25,12 +26,29 @@ export interface MapMarker {
   address?: string
 }
 
+interface DensityZone {
+  id: string
+  name: string
+  lat: number
+  lng: number
+  density: string
+  population: number
+  riskLevel: string
+  description: string
+  distance: number
+  radius: number
+  color: string
+  opacity: number
+  crowdingScore: number
+}
+
 export default function HomePage() {
   const [markers, setMarkers] = useState<MapMarker[]>([])
   const [mapCenter, setMapCenter] = useState({ lat: 40.7128, lng: -74.006 })
   const [isAddResourceOpen, setIsAddResourceOpen] = useState(false)
   const [emergencyMode, setEmergencyMode] = useState(false)
   const [hurricaneMode, setHurricaneMode] = useState(false)
+  const [densityZones, setDensityZones] = useState<DensityZone[]>([])
   const [lastQuery, setLastQuery] = useState("")
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -396,18 +414,33 @@ export default function HomePage() {
       </div>
 
       {/* Chat Panel */}
-      <div className="w-full md:w-96 flex-shrink-0 border-r border-border pt-12">
-        <ChatPanel
-          onSubmitChat={handleChatSubmit}
-          onEmergencyToggle={handleEmergencyToggle}
-          onHurricaneToggle={setHurricaneMode}
-          emergencyMode={emergencyMode}
-          hurricaneMode={hurricaneMode}
-          isLoading={isLoading}
-          lastSearchResults={lastSearchResults}
-          isUsingAI={isUsingAI}
-          userLocation={userLocation}
-        />
+      <div className="w-full md:w-96 flex-shrink-0 border-r border-border pt-12 flex flex-col">
+        <div className="flex-1">
+          <ChatPanel
+            onSubmitChat={handleChatSubmit}
+            onEmergencyToggle={handleEmergencyToggle}
+            onHurricaneToggle={setHurricaneMode}
+            emergencyMode={emergencyMode}
+            hurricaneMode={hurricaneMode}
+            isLoading={isLoading}
+            lastSearchResults={lastSearchResults}
+            isUsingAI={isUsingAI}
+            userLocation={userLocation}
+          />
+        </div>
+        
+        {/* Crowd Density Overlay */}
+        <div className="border-t border-border p-4">
+          <CrowdDensityOverlay
+            center={mapCenter}
+            onToggleOverlay={(show) => {
+              if (!show) {
+                setDensityZones([])
+              }
+            }}
+            onZonesUpdate={setDensityZones}
+          />
+        </div>
       </div>
 
       {/* Map Panel */}
@@ -419,7 +452,13 @@ export default function HomePage() {
           </div>
         )}
 
-        <MapPanel markers={markers} center={mapCenter} userLocation={userLocation || undefined} hurricaneMode={hurricaneMode} />
+        <MapPanel 
+          markers={markers} 
+          center={mapCenter} 
+          userLocation={userLocation || undefined} 
+          hurricaneMode={hurricaneMode}
+          densityZones={densityZones}
+        />
 
         {/* Floating Add Resource Button */}
         <Button

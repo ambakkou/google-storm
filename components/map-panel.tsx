@@ -8,19 +8,37 @@ import type { MapMarker } from "@/app/page"
 import { Loader } from "@googlemaps/js-api-loader"
 import { HurricaneTrack, HurricanePosition } from "@/lib/hurricane-service"
 
+interface DensityZone {
+  id: string
+  name: string
+  lat: number
+  lng: number
+  density: string
+  population: number
+  riskLevel: string
+  description: string
+  distance: number
+  radius: number
+  color: string
+  opacity: number
+  crowdingScore: number
+}
+
 interface MapPanelProps {
   markers: MapMarker[]
   center: { lat: number; lng: number }
   userLocation?: { lat: number; lng: number }
   hurricaneMode?: boolean
+  densityZones?: DensityZone[]
 }
 
-export function MapPanel({ markers, center, userLocation, hurricaneMode = false }: MapPanelProps) {
+export function MapPanel({ markers, center, userLocation, hurricaneMode = false, densityZones = [] }: MapPanelProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<google.maps.Map | null>(null)
   const markersRef = useRef<google.maps.Marker[]>([])
   const hurricaneMarkersRef = useRef<google.maps.Marker[]>([])
   const hurricanePathsRef = useRef<google.maps.Polyline[]>([])
+  const densityCirclesRef = useRef<google.maps.Circle[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [mapError, setMapError] = useState<string | null>(null)
   const [hurricaneData, setHurricaneData] = useState<HurricaneTrack[]>([])
@@ -215,6 +233,69 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false 
       mapInstanceRef.current.setCenter({ lat: center.lat, lng: center.lng })
     }
   }, [markers, center, userLocation])
+
+  // Handle density zones
+  useEffect(() => {
+    if (!mapInstanceRef.current) return
+
+    // Clear existing density circles
+    densityCirclesRef.current.forEach(circle => circle.setMap(null))
+    densityCirclesRef.current = []
+
+    // Add new density circles
+    densityZones.forEach(zone => {
+      const circle = new google.maps.Circle({
+        strokeColor: zone.color,
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: zone.color,
+        fillOpacity: zone.opacity,
+        map: mapInstanceRef.current,
+        center: { lat: zone.lat, lng: zone.lng },
+        radius: zone.radius,
+        clickable: true
+      })
+
+      // Add info window for density zone
+      const infoWindow = new google.maps.InfoWindow({
+        content: `
+          <div class="p-3 min-w-48">
+            <h3 class="font-semibold text-sm mb-2">${zone.name}</h3>
+            <div class="space-y-1 text-xs">
+              <div class="flex justify-between">
+                <span>Population:</span>
+                <span class="font-medium">${zone.population.toLocaleString()}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Density:</span>
+                <span class="font-medium">${zone.density.replace('_', ' ')}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Risk Level:</span>
+                <span class="font-medium text-${zone.riskLevel === 'high' ? 'red' : zone.riskLevel === 'medium' ? 'yellow' : 'green'}-600">
+                  ${zone.riskLevel.replace('_', ' ')}
+                </span>
+              </div>
+              <div class="flex justify-between">
+                <span>Crowd Score:</span>
+                <span class="font-medium">${zone.crowdingScore}/100</span>
+              </div>
+              <div class="mt-2 text-gray-600">
+                ${zone.description}
+              </div>
+            </div>
+          </div>
+        `
+      })
+
+      circle.addListener('click', () => {
+        infoWindow.setPosition({ lat: zone.lat, lng: zone.lng })
+        infoWindow.open(mapInstanceRef.current)
+      })
+
+      densityCirclesRef.current.push(circle)
+    })
+  }, [densityZones])
 
   // Handle hurricane markers and paths
   useEffect(() => {
