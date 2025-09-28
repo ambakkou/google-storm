@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { ChatPanel } from "@/components/chat-panel"
 import { MapPanel } from "@/components/map-panel"
 import { AddResourceModal } from "@/components/add-resource-modal"
-import { CrowdDensityOverlay } from "@/components/crowd-density-overlay"
+import { CrowdDensityPanel } from "@/components/crowd-density-panel"
 import { WeatherAlertBanner } from "@/components/weather-alert-banner"
 import { Button } from "@/components/ui/button"
 import { Toaster } from "@/components/ui/toaster"
@@ -55,6 +55,7 @@ export default function HomePage() {
   const [lastSearchResults, setLastSearchResults] = useState(0)
   const [isUsingAI, setIsUsingAI] = useState(false)
   const [showResultsPanel, setShowResultsPanel] = useState(true)
+  const [showCrowdDensity, setShowCrowdDensity] = useState(false)
   const { toast } = useToast()
   const [weatherNotificationService] = useState(() => WeatherNotificationService.getInstance())
 
@@ -403,6 +404,29 @@ export default function HomePage() {
     }
   }
 
+  const handleToggleCrowdDensity = async (show: boolean) => {
+    setShowCrowdDensity(show)
+    
+    if (show && userLocation) {
+      try {
+        const response = await fetch(
+          `/api/population-density?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=25000`
+        )
+        
+        if (response.ok) {
+          const data = await response.json()
+          setDensityZones(data.zones)
+        } else {
+          console.error('Failed to fetch density data')
+        }
+      } catch (error) {
+        console.error('Error fetching density data:', error)
+      }
+    } else {
+      setDensityZones([])
+    }
+  }
+
   return (
     <div className="flex h-screen bg-background">
       {/* Navigation Header */}
@@ -431,22 +455,20 @@ export default function HomePage() {
             lastSearchResults={lastSearchResults}
             isUsingAI={isUsingAI}
             userLocation={userLocation}
-          />
-        </div>
-        
-        {/* Crowd Density Overlay */}
-        <div className="border-t border-border p-4">
-          <CrowdDensityOverlay
-            center={mapCenter}
-            onToggleOverlay={(show) => {
-              if (!show) {
-                setDensityZones([])
-              }
-            }}
-            onZonesUpdate={setDensityZones}
+            showCrowdDensity={showCrowdDensity}
+            onToggleCrowdDensity={handleToggleCrowdDensity}
           />
         </div>
       </div>
+
+      {/* Crowd Density Panel */}
+      {showCrowdDensity && densityZones.length > 0 && (
+        <CrowdDensityPanel
+          zones={densityZones}
+          showPanel={showCrowdDensity}
+          onClose={() => setShowCrowdDensity(false)}
+        />
+      )}
 
       {/* Map Panel */}
       <div className="flex-1 relative">
