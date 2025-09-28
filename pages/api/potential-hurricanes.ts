@@ -9,21 +9,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const hurricaneService = HurricaneAPIService.getInstance()
     
-    // Check for force refresh parameter
-    const forceRefresh = req.query.refresh === 'true'
-    
-    // Fetch global hurricane and storm data
-    const response = await hurricaneService.getGlobalHurricanes(forceRefresh)
+    // Fetch potential hurricanes and tropical disturbances
+    const response = await hurricaneService.getPotentialHurricanes()
 
     res.status(200).json(response)
   } catch (error: any) {
-    console.error('Error fetching hurricane data:', error)
+    console.error('Error fetching potential hurricane data:', error)
     res.status(500).json({ 
-      error: 'Failed to fetch hurricane data',
+      error: 'Failed to fetch potential hurricane data',
       details: error.message,
-      hurricanes: [],
+      hurricanes: [], // Return empty array on error
       lastUpdated: new Date().toISOString(),
-      source: 'Error'
+      source: 'Error' // Indicate error source
     })
   }
 }
