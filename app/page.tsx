@@ -579,15 +579,16 @@ export default function HomePage() {
           />
         )}
 
-        <MapPanel 
-          markers={markers} 
-          center={mapCenter} 
-          userLocation={userLocation || undefined} 
-          hurricaneMode={hurricaneMode}
-          densityZones={densityZones}
-          showResultsPanel={showResultsPanel}
-          onCloseResultsPanel={() => setShowResultsPanel(false)}
-        />
+         <MapPanel 
+           markers={markers} 
+           center={mapCenter} 
+           userLocation={userLocation || undefined} 
+           hurricaneMode={hurricaneMode}
+           emergencyMode={emergencyMode}
+           densityZones={densityZones}
+           showResultsPanel={showResultsPanel}
+           onCloseResultsPanel={() => setShowResultsPanel(false)}
+         />
 
         {/* Floating Add Resource Button */}
         <Button

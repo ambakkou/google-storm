@@ -252,16 +252,16 @@ export function WeatherPanel({ lat, lng, onAlertClick }: WeatherPanelProps) {
             {forecastData && (
               <div className="space-y-2">
                 {forecastData.forecast.map((day, index) => (
-                  <div key={day.date} className="flex items-center justify-between p-2 border rounded-lg text-sm">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <div key={day.date} className="flex items-center justify-between p-2.5 border rounded-lg text-sm">
+                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
                       <div className="text-xs font-medium w-12 flex-shrink-0">
                         {index === 0 ? 'Today' : new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
                       </div>
                       <div className="text-sm flex-shrink-0">{weatherService.getTypeIcon('other')}</div>
-                      <div className="text-xs text-muted-foreground max-w-20 truncate flex-shrink-0">{day.condition}</div>
+                      <div className="text-xs text-muted-foreground flex-1 truncate">{day.condition}</div>
                     </div>
                     
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-2.5 flex-shrink-0">
                       <div className="text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Wind className="w-3 h-3" />

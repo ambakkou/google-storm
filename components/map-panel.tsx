@@ -37,6 +37,7 @@ interface MapPanelProps {
   center: { lat: number; lng: number }
   userLocation?: { lat: number; lng: number }
   hurricaneMode?: boolean
+  emergencyMode?: boolean
   densityZones?: DensityZone[]
   showResultsPanel?: boolean
   onCloseResultsPanel?: () => void
@@ -47,6 +48,7 @@ export function MapPanel({
   center,
   userLocation,
   hurricaneMode = false,
+  emergencyMode = false,
   densityZones = [],
   showResultsPanel = true,
   onCloseResultsPanel,
@@ -731,19 +733,37 @@ export function MapPanel({
     const icons = {
       shelter: '🏠',
       food_bank: '🍽️',
-      clinic: '🏥'
-      ,police: '🚓',
+      clinic: '🏥',
+      police: '🚓',
       fire: '🚒'
     }
 
-    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-      <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="20" cy="20" r="16" fill="${colors[type]}" stroke="white" strokeWidth="3"/>
-        <text x="20" y="26" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold">
-          ${icons[type]}
-        </text>
-      </svg>
-    `)}`
+    // Create canvas for better emoji centering
+    const canvas = document.createElement('canvas')
+    const size = 40
+    canvas.width = size
+    canvas.height = size
+    const ctx = canvas.getContext('2d')!
+
+    // Draw circle background
+    ctx.fillStyle = colors[type]
+    ctx.beginPath()
+    ctx.arc(size / 2, size / 2, 16, 0, 2 * Math.PI)
+    ctx.fill()
+
+    // Draw white border
+    ctx.strokeStyle = 'white'
+    ctx.lineWidth = 3
+    ctx.stroke()
+
+    // Draw emoji - centered
+    ctx.font = '16px system-ui, -apple-system, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = 'white'
+    ctx.fillText(icons[type], size / 2, size / 2)
+
+    return canvas.toDataURL()
   }
 
   const getTypeColor = (type: MapMarker["type"]) => {
@@ -903,7 +923,7 @@ export function MapPanel({
   }
 
   return (
-    <div className="h-full relative bg-muted">
+    <div className={`h-full relative bg-muted transition-all duration-300 ${emergencyMode ? 'border-4 border-red-500 shadow-lg shadow-red-500/20' : ''}`}>
       {/* Google Maps Container */}
       <div ref={mapRef} className="w-full h-full" />
 
@@ -914,6 +934,23 @@ export function MapPanel({
             <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">Loading map...</p>
           </div>
+        </div>
+      )}
+
+      {/* Emergency Mode Banner */}
+      {emergencyMode && (
+        <div className="absolute top-16 right-4 max-w-sm z-20">
+          <Card className="p-4 bg-red-50/95 backdrop-blur-sm border-red-200 shadow-lg">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+              <h3 className="font-semibold text-red-900 flex items-center gap-2">
+                🚨 Emergency Mode Active
+              </h3>
+            </div>
+            <p className="text-xs text-red-700 mt-1">
+              Showing emergency shelters and services
+            </p>
+          </Card>
         </div>
       )}
 
