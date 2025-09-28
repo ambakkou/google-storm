@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSession, signOut } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Check, X, MapPin, Clock, ArrowLeft } from "lucide-react"
+import { Check, X, MapPin, Clock, ArrowLeft, LogOut, User } from "lucide-react"
 import Link from "next/link"
 
 interface PendingSubmission {
@@ -18,8 +20,25 @@ interface PendingSubmission {
 }
 
 export default function AdminPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
   const [submissions, setSubmissions] = useState<PendingSubmission[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Redirect if not authenticated or not admin
+  useEffect(() => {
+    if (status === "loading") return // Still loading
+
+    if (status === "unauthenticated") {
+      router.push('/admin/signin')
+      return
+    }
+
+    if (session && !session.user?.isAdmin) {
+      router.push('/admin/error')
+      return
+    }
+  }, [session, status, router])
 
   // Fetch pending resources on component mount
   useEffect(() => {
@@ -117,14 +136,26 @@ export default function AdminPage() {
 
   const pendingCount = submissions.filter((sub) => sub.status === "pending").length
 
-  if (loading) {
+  // Show loading while checking authentication
+  if (status === "loading" || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-muted-foreground text-lg">Loading pending resources...</p>
+          <p className="text-muted-foreground text-lg">
+            {status === "loading" ? "Checking authentication..." : "Loading pending resources..."}
+          </p>
         </div>
       </div>
     )
+  }
+
+  // Don't render anything if redirecting
+  if (!session?.user?.isAdmin) {
+    return null
+  }
+
+  const handleSignOut = () => {
+    signOut({ callbackUrl: '/' })
   }
 
   return (
@@ -132,13 +163,24 @@ export default function AdminPage() {
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center justify-between mb-4">
             <Link href="/">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Map
               </Button>
             </Link>
+            
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <User className="w-4 h-4" />
+                <span>{session.user?.email}</span>
+              </div>
+              <Button variant="outline" size="sm" onClick={handleSignOut}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Resource Admin</h1>
           <p className="text-muted-foreground">Manage emergency resource submissions</p>
