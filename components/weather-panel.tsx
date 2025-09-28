@@ -253,29 +253,29 @@ export function WeatherPanel({ lat, lng, onAlertClick }: WeatherPanelProps) {
               <div className="space-y-2">
                 {forecastData.forecast.map((day, index) => (
                   <div key={day.date} className="flex items-center justify-between p-2 border rounded-lg text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="text-xs font-medium w-12">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <div className="text-xs font-medium w-12 flex-shrink-0">
                         {index === 0 ? 'Today' : new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' })}
                       </div>
-                      <div className="text-sm">{weatherService.getTypeIcon('other')}</div>
-                      <div className="text-xs text-muted-foreground max-w-20 truncate">{day.condition}</div>
+                      <div className="text-sm flex-shrink-0">{weatherService.getTypeIcon('other')}</div>
+                      <div className="text-xs text-muted-foreground max-w-20 truncate flex-shrink-0">{day.condition}</div>
                     </div>
                     
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <div className="text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Wind className="w-3 h-3" />
-                          {day.windSpeed}
+                          <span>{day.windSpeed}</span>
                         </div>
                       </div>
                       
-                      <div className="text-xs">
+                      <div className="text-xs min-w-[3rem] text-right">
                         <span className="font-medium">{day.high}°</span>
                         <span className="text-muted-foreground">/{day.low}°</span>
                       </div>
                       
                       {day.isHurricaneRisk && (
-                        <Badge variant="destructive" className="text-xs px-1 py-0">
+                        <Badge variant="destructive" className="text-xs px-1.5 py-0.5 ml-1">
                           <span className="mr-1">🌀</span>
                           Risk
                         </Badge>

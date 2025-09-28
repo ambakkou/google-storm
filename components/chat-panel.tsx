@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
@@ -42,6 +42,15 @@ export function ChatPanel({ onSubmitChat, onEmergencyToggle, onHurricaneToggle, 
     },
   ])
   const [inputText, setInputText] = useState("")
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -84,7 +93,7 @@ export function ChatPanel({ onSubmitChat, onEmergencyToggle, onHurricaneToggle, 
   return (
     <div className="flex flex-col h-full bg-card">
       {/* Header */}
-      <div className="p-6 border-b border-border">
+      <div className="p-6 border-b border-border flex-shrink-0">
         <h1 className="text-2xl font-bold text-foreground mb-4">Google Storm</h1>
 
         {/* Emergency Mode Toggle */}
@@ -139,13 +148,13 @@ export function ChatPanel({ onSubmitChat, onEmergencyToggle, onHurricaneToggle, 
 
       {/* Weather Panel - Fixed at top */}
       {userLocation && (
-        <div className="p-4 border-b border-border bg-background sticky top-0 z-10">
+        <div className="p-4 border-b border-border bg-background flex-shrink-0">
           <WeatherPanel lat={userLocation.lat} lng={userLocation.lng} />
         </div>
       )}
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
         {messages.map((message) => (
           <div key={message.id} className={`flex ${message.isUser ? "justify-end" : "justify-start"}`}>
             <Card
@@ -153,14 +162,15 @@ export function ChatPanel({ onSubmitChat, onEmergencyToggle, onHurricaneToggle, 
                 message.isUser ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground"
               }`}
             >
-              <p className="text-sm">{message.text}</p>
+              <p className="text-sm break-words">{message.text}</p>
             </Card>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input Form */}
-      <div className="p-4 border-t border-border">
+      <div className="p-4 border-t border-border flex-shrink-0">
         <form onSubmit={handleSubmit} className="flex gap-2">
           <Input
             value={inputText}
