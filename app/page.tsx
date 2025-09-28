@@ -6,11 +6,12 @@ import { MapPanel } from "@/components/map-panel"
 import { AddResourceModal } from "@/components/add-resource-modal"
 import { CrowdDensityPanel } from "@/components/crowd-density-panel"
 import { WeatherAlertBanner } from "@/components/weather-alert-banner"
+import { RealWeatherNotification } from "@/components/real-weather-notification"
 import { Button } from "@/components/ui/button"
 import { Toaster } from "@/components/ui/toaster"
 import { Plus, MapPin, Settings } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { WeatherNotificationService } from "@/lib/weather-notifications"
+import { SmartWeatherNotificationService } from "@/lib/smart-weather-notification-service"
 import { WeatherAlert } from "@/lib/weather-service"
 import Link from "next/link"
 
@@ -57,7 +58,8 @@ export default function HomePage() {
   const [showResultsPanel, setShowResultsPanel] = useState(true)
   const [showCrowdDensity, setShowCrowdDensity] = useState(false)
   const { toast } = useToast()
-  const [weatherNotificationService] = useState(() => WeatherNotificationService.getInstance())
+
+  const [weatherNotificationService] = useState(() => SmartWeatherNotificationService.getInstance())
   const [activeFilters, setActiveFilters] = useState<Record<MapMarker['type'], boolean>>({
     shelter: false,
     food_bank: false,
@@ -85,26 +87,18 @@ export default function HomePage() {
 
   // Initialize weather notifications
   useEffect(() => {
-    weatherNotificationService.loadPersistedData()
-
     if (userLocation) {
       weatherNotificationService.startMonitoring(
         userLocation.lat,
         userLocation.lng,
-        (alerts: WeatherAlert[]) => {
-          if (alerts.length > 0) {
-            const urgentAlerts = alerts.filter(alert =>
-              alert.severity === 'severe' || alert.severity === 'extreme'
-            )
-
-            if (urgentAlerts.length > 0) {
-              toast({
-                title: "🚨 Urgent Weather Alert",
-                description: `${urgentAlerts[0].title} - ${urgentAlerts[0].description}`,
-                variant: "destructive",
-                duration: 10000,
-              })
-            }
+        (condition) => {
+          if (condition && (condition.severity === 'severe' || condition.severity === 'extreme')) {
+            toast({
+              title: "🚨 Urgent Weather Alert",
+              description: `${condition.title} - ${condition.description}`,
+              variant: "destructive",
+              duration: 10000,
+            })
           }
         }
       )
@@ -562,10 +556,21 @@ export default function HomePage() {
           </div>
         )}
 
-        <MapPanel
-          markers={markers}
-          center={mapCenter}
-          userLocation={userLocation || undefined}
+        {/* Real Weather Notification */}
+        {userLocation && (
+          <RealWeatherNotification 
+            lat={userLocation.lat} 
+            lng={userLocation.lng}
+            onDismiss={(alertId) => {
+              console.log('Weather alert dismissed:', alertId)
+            }}
+          />
+        )}
+
+        <MapPanel 
+          markers={markers} 
+          center={mapCenter} 
+          userLocation={userLocation || undefined} 
           hurricaneMode={hurricaneMode}
           densityZones={densityZones}
           showResultsPanel={showResultsPanel}

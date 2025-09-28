@@ -20,8 +20,9 @@ export function WeatherSettingsModal({ children }: WeatherSettingsModalProps) {
     enablePushNotifications: true,
     enableHurricaneAlerts: true,
     enableSevereWeatherAlerts: true,
-    enableModerateWeatherAlerts: false,
+    enableModerateWeatherAlerts: true,
     alertFrequency: 'immediate' as 'immediate' | 'hourly' | 'daily',
+    testMode: false,
   })
   
   const [notificationService] = useState(() => WeatherNotificationService.getInstance())
@@ -29,12 +30,22 @@ export function WeatherSettingsModal({ children }: WeatherSettingsModalProps) {
   useEffect(() => {
     if (isOpen) {
       const currentSettings = notificationService.getSettings()
-      setSettings(currentSettings)
+      // Load test mode from localStorage
+      const testMode = localStorage.getItem('weatherTestMode') === 'true'
+      setSettings({ ...currentSettings, testMode })
     }
   }, [isOpen, notificationService])
 
   const handleSave = () => {
-    notificationService.updateSettings(settings)
+    // Save notification settings
+    const { testMode, ...notificationSettings } = settings
+    notificationService.updateSettings(notificationSettings)
+    
+    // Save test mode separately
+    localStorage.setItem('weatherTestMode', testMode.toString())
+    
+    console.log('Weather settings saved:', { notificationSettings, testMode })
+    
     setIsOpen(false)
   }
 
@@ -115,14 +126,26 @@ export function WeatherSettingsModal({ children }: WeatherSettingsModalProps) {
                 </Select>
               </div>
 
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleTestNotification}
-                className="w-full"
-              >
-                Test Notification
-              </Button>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="test-mode" className="text-sm font-medium">
+                  Test Mode
+                </Label>
+                <Switch
+                  id="test-mode"
+                  checked={settings.testMode}
+                  onCheckedChange={(checked) => {
+                    setSettings(prev => ({ ...prev, testMode: checked }))
+                    // Trigger immediate refresh when test mode changes
+                    setTimeout(() => {
+                      window.dispatchEvent(new CustomEvent('weatherSettingsChanged'))
+                    }, 100)
+                  }}
+                />
+              </div>
+              
+              <div className="text-xs text-muted-foreground">
+                {settings.testMode ? 'Using simulated weather conditions for testing' : 'Using real weather data from government sources'}
+              </div>
             </CardContent>
           </Card>
 
