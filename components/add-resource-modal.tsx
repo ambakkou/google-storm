@@ -11,12 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader } from "@googlemaps/js-api-loader"
 
-// Declare global Google Maps types
-declare global {
-  interface Window {
-    google: any;
-  }
-}
+// Google Maps types are now provided by @types/google.maps
 
 interface AddResourceModalProps {
   isOpen: boolean
@@ -44,7 +39,7 @@ interface AddressInputProps {
 
 function AddressInput({ value, onChange, placeholder, className, id, isOpen }: AddressInputProps) {
   const [isInitialized, setIsInitialized] = useState(false)
-  const autocompleteInstance = useRef<any>(null)
+  const autocompleteInstance = useRef<google.maps.places.Autocomplete | null>(null)
 
   // Reset state when modal closes
   useEffect(() => {
@@ -97,19 +92,19 @@ function AddressInput({ value, onChange, placeholder, className, id, isOpen }: A
             google.maps.event.clearInstanceListeners(autocompleteInstance.current)
           }
           
-          const autocomplete = new window.google.maps.places.Autocomplete(inputElement, {
+          const ac = new window.google.maps.places.Autocomplete(inputElement, {
             types: ['address'],
             componentRestrictions: { country: 'us' },
             fields: ['formatted_address', 'geometry', 'name', 'place_id']
           })
           
-          autocompleteInstance.current = autocomplete
+          autocompleteInstance.current = ac
           // Mark input as having autocomplete
-          (inputElement as any).__autocomplete = autocomplete
+          (inputElement as any).__autocomplete = ac
 
           // Handle place selection
-          autocomplete.addListener('place_changed', () => {
-            const place = autocomplete.getPlace()
+          ac.addListener('place_changed', () => {
+            const place = ac.getPlace()
             console.log('Place changed event triggered, place:', place)
             
             if (place?.formatted_address && place.geometry?.location) {
@@ -124,101 +119,6 @@ function AddressInput({ value, onChange, placeholder, className, id, isOpen }: A
               console.log('Place selected but missing data:', place)
             }
           })
-
-          // Debug and fix pac-container
-          const debugPacContainer = () => {
-            const pacContainer = document.querySelector('.pac-container')
-            console.log('Pac-container found:', !!pacContainer)
-            
-            if (pacContainer) {
-              const container = pacContainer as HTMLElement
-              console.log('Pac-container styles:', {
-                zIndex: container.style.zIndex,
-                position: container.style.position,
-                display: container.style.display,
-                visibility: container.style.visibility
-              })
-              
-              container.style.zIndex = '9999'
-              container.style.position = 'absolute'
-              container.style.display = 'block'
-              container.style.visibility = 'visible'
-              
-              // Debug pac-items
-              const pacItems = container.querySelectorAll('.pac-item')
-              console.log('Found pac-items:', pacItems.length)
-              
-              pacItems.forEach((item, index) => {
-                const htmlItem = item as HTMLElement
-                console.log(`Pac-item ${index}:`, {
-                  text: htmlItem.textContent,
-                  styles: {
-                    pointerEvents: htmlItem.style.pointerEvents,
-                    cursor: htmlItem.style.cursor,
-                    zIndex: htmlItem.style.zIndex
-                  }
-                })
-                
-                // Ensure item is clickable
-                htmlItem.style.pointerEvents = 'auto'
-                htmlItem.style.cursor = 'pointer'
-                htmlItem.style.zIndex = '10000'
-                
-                // Remove any existing listeners to avoid duplicates
-                const newItem = htmlItem.cloneNode(true) as HTMLElement
-                htmlItem.parentNode?.replaceChild(newItem, htmlItem)
-                
-                // Add click handler to new element
-                newItem.addEventListener('click', (e) => {
-                  console.log('=== PAC ITEM CLICKED ===')
-                  console.log('Pac-item text:', newItem.textContent)
-                  console.log('Pac-item attributes:', newItem.attributes)
-                  console.log('Input element:', inputElement)
-                  console.log('Input current value:', inputElement.value)
-                  
-                  e.preventDefault()
-                  e.stopPropagation()
-                  e.stopImmediatePropagation()
-                  
-                  // Hide the pac-container to prevent modal from closing
-                  const pacContainer = document.querySelector('.pac-container')
-                  if (pacContainer) {
-                    (pacContainer as HTMLElement).style.display = 'none'
-                  }
-                  
-                  // Simple approach: just set the text directly
-                  const addressText = newItem.textContent?.trim() || ''
-                  console.log('Setting address text:', addressText)
-                  
-                  // Method 1: Direct value setting
-                  inputElement.value = addressText
-                  console.log('Input value after setting:', inputElement.value)
-                  
-                  // Method 2: Trigger input event
-                  const inputEvent = new Event('input', { bubbles: true })
-                  inputElement.dispatchEvent(inputEvent)
-                  
-                  // Method 3: Trigger change event
-                  const changeEvent = new Event('change', { bubbles: true })
-                  inputElement.dispatchEvent(changeEvent)
-                  
-                  // Method 4: Call onChange directly
-                  console.log('Calling onChange with:', addressText)
-                  onChange(addressText)
-                  
-                  console.log('=== CLICK HANDLER COMPLETE ===')
-                })
-              })
-            }
-          }
-
-          // Try to fix immediately and repeatedly
-          const fixInterval = setInterval(() => {
-            debugPacContainer()
-          }, 100)
-
-          // Clean up interval after 10 seconds
-          setTimeout(() => clearInterval(fixInterval), 10000)
 
           console.log('Address autocomplete initialized successfully!')
           setIsInitialized(true)
@@ -237,20 +137,20 @@ function AddressInput({ value, onChange, placeholder, className, id, isOpen }: A
             libraries: ['places']
           })
 
-          const google = await loader.load()
-          const autocomplete = new google.maps.places.Autocomplete(inputElement, {
+          const googleMaps = await loader.load()
+          const ac = new googleMaps.maps.places.Autocomplete(inputElement, {
             types: ['address'],
             componentRestrictions: { country: 'us' },
             fields: ['formatted_address', 'geometry', 'name', 'place_id']
           })
           
-          autocompleteInstance.current = autocomplete
+          autocompleteInstance.current = ac
           // Mark input as having autocomplete
-          (inputElement as any).__autocomplete = autocomplete
+          (inputElement as any).__autocomplete = ac
 
           // Handle place selection
-          autocomplete.addListener('place_changed', () => {
-            const place = autocomplete.getPlace()
+          ac.addListener('place_changed', () => {
+            const place = ac.getPlace()
             console.log('Place changed event triggered, place:', place)
             
             if (place?.formatted_address && place.geometry?.location) {
@@ -265,101 +165,6 @@ function AddressInput({ value, onChange, placeholder, className, id, isOpen }: A
               console.log('Place selected but missing data:', place)
             }
           })
-
-          // Debug and fix pac-container
-          const debugPacContainer = () => {
-            const pacContainer = document.querySelector('.pac-container')
-            console.log('Pac-container found:', !!pacContainer)
-            
-            if (pacContainer) {
-              const container = pacContainer as HTMLElement
-              console.log('Pac-container styles:', {
-                zIndex: container.style.zIndex,
-                position: container.style.position,
-                display: container.style.display,
-                visibility: container.style.visibility
-              })
-              
-              container.style.zIndex = '9999'
-              container.style.position = 'absolute'
-              container.style.display = 'block'
-              container.style.visibility = 'visible'
-              
-              // Debug pac-items
-              const pacItems = container.querySelectorAll('.pac-item')
-              console.log('Found pac-items:', pacItems.length)
-              
-              pacItems.forEach((item, index) => {
-                const htmlItem = item as HTMLElement
-                console.log(`Pac-item ${index}:`, {
-                  text: htmlItem.textContent,
-                  styles: {
-                    pointerEvents: htmlItem.style.pointerEvents,
-                    cursor: htmlItem.style.cursor,
-                    zIndex: htmlItem.style.zIndex
-                  }
-                })
-                
-                // Ensure item is clickable
-                htmlItem.style.pointerEvents = 'auto'
-                htmlItem.style.cursor = 'pointer'
-                htmlItem.style.zIndex = '10000'
-                
-                // Remove any existing listeners to avoid duplicates
-                const newItem = htmlItem.cloneNode(true) as HTMLElement
-                htmlItem.parentNode?.replaceChild(newItem, htmlItem)
-                
-                // Add click handler to new element
-                newItem.addEventListener('click', (e) => {
-                  console.log('=== PAC ITEM CLICKED ===')
-                  console.log('Pac-item text:', newItem.textContent)
-                  console.log('Pac-item attributes:', newItem.attributes)
-                  console.log('Input element:', inputElement)
-                  console.log('Input current value:', inputElement.value)
-                  
-                  e.preventDefault()
-                  e.stopPropagation()
-                  e.stopImmediatePropagation()
-                  
-                  // Hide the pac-container to prevent modal from closing
-                  const pacContainer = document.querySelector('.pac-container')
-                  if (pacContainer) {
-                    (pacContainer as HTMLElement).style.display = 'none'
-                  }
-                  
-                  // Simple approach: just set the text directly
-                  const addressText = newItem.textContent?.trim() || ''
-                  console.log('Setting address text:', addressText)
-                  
-                  // Method 1: Direct value setting
-                  inputElement.value = addressText
-                  console.log('Input value after setting:', inputElement.value)
-                  
-                  // Method 2: Trigger input event
-                  const inputEvent = new Event('input', { bubbles: true })
-                  inputElement.dispatchEvent(inputEvent)
-                  
-                  // Method 3: Trigger change event
-                  const changeEvent = new Event('change', { bubbles: true })
-                  inputElement.dispatchEvent(changeEvent)
-                  
-                  // Method 4: Call onChange directly
-                  console.log('Calling onChange with:', addressText)
-                  onChange(addressText)
-                  
-                  console.log('=== CLICK HANDLER COMPLETE ===')
-                })
-              })
-            }
-          }
-
-          // Try to fix immediately and repeatedly
-          const fixInterval = setInterval(() => {
-            debugPacContainer()
-          }, 100)
-
-          // Clean up interval after 10 seconds
-          setTimeout(() => clearInterval(fixInterval), 10000)
 
           console.log('Address autocomplete initialized successfully!')
           setIsInitialized(true)
@@ -478,8 +283,24 @@ export function AddResourceModal({ isOpen, onClose, onSubmit }: AddResourceModal
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        // Only run close/reset logic when the dialog is actually closing
+        if (!open) handleClose()
+      }}
+    >
+      <DialogContent 
+        className="sm:max-w-md"
+        onInteractOutside={(e) => {
+          const el = e.target as HTMLElement
+          if (el.closest('.pac-container')) e.preventDefault()
+        }}
+        onPointerDownOutside={(e) => {
+          const el = e.target as HTMLElement
+          if (el.closest('.pac-container')) e.preventDefault()
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Add Emergency Resource</DialogTitle>
         </DialogHeader>
