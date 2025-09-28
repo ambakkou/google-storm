@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useSession, signOut } from "next-auth/react"
+import { AdminNotification } from "@/components/admin-notification"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -160,6 +161,9 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Admin Notifications */}
+      <AdminNotification />
+      
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
