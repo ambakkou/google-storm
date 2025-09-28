@@ -295,55 +295,97 @@ export default function HomePage() {
   const handleEmergencyToggle = async (enabled: boolean) => {
     setEmergencyMode(enabled)
 
-    // Re-run last query with emergency categories if there was a previous query
-    if (lastQuery && enabled) {
-      // Force emergency mode: categories=["shelter"], openNow=true
+    if (enabled) {
+      // When emergency mode is enabled, load both shelters and emergency services
+      setIsLoading(true)
       try {
-        const intentResponse = await fetch("/api/intent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            text: lastQuery,
-            emergencyMode: true,
-          }),
-        })
+        const lat = userLocation?.lat || 25.774
+        const lng = userLocation?.lng || -80.193
+        
+        // Load emergency shelters and emergency services in parallel
+        const [sheltersResponse, emergencyResponse] = await Promise.all([
+          fetch(`/api/places?type=shelter&lat=${lat}&lng=${lng}&radius=5000&openNow=true`),
+          fetch(`/api/emergency-list?lat=${lat}&lng=${lng}&radius=20000`)
+        ])
 
-        if (!intentResponse.ok) {
-          throw new Error("Failed to process emergency intent")
+        let allMarkers: MapMarker[] = []
+
+        // Process shelter results
+        if (sheltersResponse.ok) {
+          const { results: shelterResults } = await sheltersResponse.json()
+          const shelterMarkers = (shelterResults || []).map((place: any) => ({
+            id: place.id,
+            name: place.name,
+            type: (place.type || 'shelter') as MapMarker["type"],
+            lat: place.lat,
+            lng: place.lng,
+            openNow: place.openNow,
+            source: place.source,
+            address: place.address,
+          }))
+          allMarkers.push(...shelterMarkers)
         }
 
-        const { intent } = await intentResponse.json()
-        console.log("Emergency intent received:", intent)
+        // Process emergency services results
+        if (emergencyResponse.ok) {
+          const { results: emergencyResults } = await emergencyResponse.json()
+          const emergencyMarkers = (emergencyResults || []).map((place: any) => ({
+            id: place.id,
+            name: place.name,
+            type: place.type as MapMarker['type'],
+            lat: place.lat,
+            lng: place.lng,
+            openNow: place.openNow ?? null,
+            source: place.source ?? 'places',
+            address: place.address,
+          }))
+          allMarkers.push(...emergencyMarkers)
+        }
 
-        // Load shelter data for emergency mode via Places (do not return seed JSON unless user pressed the Shelters button)
-        try {
-          const lat = userLocation?.lat || 25.774
-          const lng = userLocation?.lng || -80.193
-          const placesResponse = await fetch(`/api/places?type=shelter&lat=${lat}&lng=${lng}&radius=5000&openNow=true`)
-          if (placesResponse.ok) {
-            const { results } = await placesResponse.json()
-            const shelterMarkers = (results || []).map((place: any) => ({
-              id: place.id,
-              name: place.name,
-              type: (place.type || 'shelter') as MapMarker["type"],
-              lat: place.lat,
-              lng: place.lng,
-              openNow: place.openNow,
-              source: place.source,
-              address: place.address,
-            }))
-            setMarkers(shelterMarkers)
-            if (shelterMarkers.length > 0) {
-              setMapCenter({ lat: shelterMarkers[0].lat, lng: shelterMarkers[0].lng })
-              setShowResultsPanel(true)
+        // Update markers and filters
+        setMarkers(allMarkers)
+        setActiveFilters(prev => ({ 
+          ...prev, 
+          shelter: sheltersResponse.ok, 
+          police: emergencyResponse.ok, 
+          fire: emergencyResponse.ok 
+        }))
+        
+        if (allMarkers.length > 0) {
+          setMapCenter({ lat: allMarkers[0].lat, lng: allMarkers[0].lng })
+          setShowResultsPanel(true)
+        }
+
+        // Re-run last query with emergency categories if there was a previous query
+        if (lastQuery) {
+          try {
+            const intentResponse = await fetch("/api/intent", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                text: lastQuery,
+                emergencyMode: true,
+              }),
+            })
+
+            if (intentResponse.ok) {
+              const { intent } = await intentResponse.json()
+              console.log("Emergency intent received:", intent)
             }
+          } catch (error) {
+            console.error("Failed to process emergency intent:", error)
           }
-        } catch (error) {
-          console.error("Failed to load emergency shelter data (Places):", error)
         }
+
       } catch (error) {
-        console.error("Failed to handle emergency toggle:", error)
+        console.error("Failed to load emergency data:", error)
+      } finally {
+        setIsLoading(false)
       }
+    } else {
+      // When emergency mode is disabled, remove emergency-related markers
+      setMarkers(prev => prev.filter(m => !(m.type === 'shelter' || m.type === 'police' || m.type === 'fire')))
+      setActiveFilters(prev => ({ ...prev, shelter: false, police: false, fire: false }))
     }
   }
 
@@ -387,10 +429,16 @@ export default function HomePage() {
   // Toggle Places-based lists (Food Banks, Shelters, Clinics) on/off
   const toggleStaticList = async (type: MapMarker['type']) => {
     const currentlyActive = activeFilters[type]
+    
     // Turn off: remove place markers for this type
     if (currentlyActive) {
       setActiveFilters(prev => ({ ...prev, [type]: false }))
       setMarkers(prev => prev.filter(m => !(m.source === 'places' && m.type === type)))
+      return
+    }
+
+    // If emergency mode is active and we're toggling shelter, don't duplicate
+    if (emergencyMode && type === 'shelter') {
       return
     }
 
@@ -465,45 +513,9 @@ export default function HomePage() {
           <div className="flex items-center gap-2">
             <Button size="sm" variant={activeFilters.food_bank ? 'secondary' : 'ghost'} onClick={() => toggleStaticList('food_bank')}>Food Banks</Button>
 
-            <Button size="sm" variant={activeFilters.shelter ? 'secondary' : 'ghost'} onClick={() => toggleStaticList('shelter')}>Shelters</Button>
+            <Button size="sm" variant={(activeFilters.shelter || emergencyMode) ? 'secondary' : 'ghost'} onClick={() => toggleStaticList('shelter')}>Shelters</Button>
 
             <Button size="sm" variant={activeFilters.clinic ? 'secondary' : 'ghost'} onClick={() => toggleStaticList('clinic')}>Clinics</Button>
-
-              <Button size="sm" variant={activeFilters.police || activeFilters.fire ? 'secondary' : 'ghost'} onClick={async () => {
-              // Toggle Emergency Services (police + fire)
-              const currentlyActive = activeFilters.police || activeFilters.fire
-              if (currentlyActive) {
-                // turn off both
-                setActiveFilters(prev => ({ ...prev, police: false, fire: false }))
-                setMarkers(prev => prev.filter(m => !(m.type === 'police' || m.type === 'fire')))
-                return
-              }
-
-              setIsLoading(true)
-              try {
-                const lat = userLocation?.lat || 25.774
-                const lng = userLocation?.lng || -80.193
-                // Increase radius to 20km for emergency services to broaden coverage
-                const resp = await fetch(`/api/emergency-list?lat=${lat}&lng=${lng}&radius=20000`)
-                if (resp.ok) {
-                  const { results } = await resp.json()
-                  const newMarkers = results.map((p: any) => ({
-                    id: p.id,
-                    name: p.name,
-                    type: p.type as MapMarker['type'],
-                    lat: p.lat,
-                    lng: p.lng,
-                    openNow: p.openNow ?? null,
-                    source: p.source ?? 'places',
-                    address: p.address,
-                  }))
-                  setMarkers(prev => [...prev.filter(m => !(m.type === 'police' || m.type === 'fire')), ...newMarkers])
-                  setActiveFilters(prev => ({ ...prev, police: true, fire: true }))
-                }
-              } catch (e) {
-                console.error('Failed to load emergency services', e)
-              } finally { setIsLoading(false) }
-            }}>Emergency Services</Button>
 
             <Link href="/admin">
               <Button variant="ghost" size="sm">
