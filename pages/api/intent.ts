@@ -2,8 +2,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const SYSTEM = `You classify user queries for a crisis resource finder.
-Return ONLY valid JSON (no markdown, no code blocks): {"language":"en"|"es", "categories": ["shelter"|"food_bank"|"clinic"], "openNowPreferred": boolean, "queryTerms": ["term1", "term2"]}.
-Map categories to: "shelter" (housing, homeless), "food_bank" (food, hungry, meal), "clinic" (medical, doctor, health).
+Return ONLY valid JSON (no markdown, no code blocks): {"language":"en"|"es", "categories": ["shelter"|"food_bank"|"clinic"|"police"|"fire"], "openNowPreferred": boolean, "queryTerms": ["term1", "term2"]}.
+Map categories to: "shelter" (housing, homeless), "food_bank" (food, hungry, meal), "clinic" (medical, doctor, health), "police" (police, cop, station, 911), "fire" (fire, fire station, smoke, firefighter).
 Example: {"language":"en", "categories":["shelter"], "openNowPreferred":true, "queryTerms":["shelter", "emergency"]}`;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -84,6 +84,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     if (lowerText.includes('clinic') || lowerText.includes('doctor') || lowerText.includes('medical') || lowerText.includes('health')) {
       categories.push('clinic');
+    }
+    // Emergency service keywords
+    if (lowerText.includes('police') || lowerText.includes('cop') || lowerText.includes('station') || lowerText.includes('911')) {
+      categories.push('police')
+    }
+    if (lowerText.includes('fire') || lowerText.includes('firefighter') || lowerText.includes('smoke') || lowerText.includes('burning')) {
+      categories.push('fire')
     }
     
     // Default to shelter if no categories found

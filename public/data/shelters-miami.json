@@ -1,0 +1,102 @@
+[
+  {
+    "id": "shelter-1",
+    "name": "Camillus House",
+    "type": "shelter",
+    "address": "1603 NW 7th Ave, Miami, FL 33136",
+    "lat": 25.7904,
+    "lng": -80.1993,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "shelter-2",
+    "name": "Miami Rescue Mission",
+    "type": "shelter",
+    "address": "2020 NW 1st Ave, Miami, FL 33127",
+    "lat": 25.7951,
+    "lng": -80.1944,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "shelter-3",
+    "name": "Lotus House Shelter",
+    "type": "shelter",
+    "address": "217 NW 15th St, Miami, FL 33136",
+    "lat": 25.7895,
+    "lng": -80.1952,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "shelter-4",
+    "name": "Chapman Partnership – Downtown Homeless Assistance Center",
+    "type": "shelter",
+    "address": "1550 N Miami Ave, Miami, FL 33136",
+    "lat": 25.7919,
+    "lng": -80.1939,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "shelter-5",
+    "name": "Chapman Partnership – Homestead Homeless Assistance Center",
+    "type": "shelter",
+    "address": "28205 SW 125th Ave, Homestead, FL 33033",
+    "lat": 25.5039,
+    "lng": -80.4025,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "shelter-6",
+    "name": "The Salvation Army – Center of Hope",
+    "type": "shelter",
+    "address": "1907 NW 38th St, Miami, FL 33142",
+    "lat": 25.8122,
+    "lng": -80.2274,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "shelter-7",
+    "name": "Miami-Dade County Fair & Exposition Center (Hurricane Shelter)",
+    "type": "shelter",
+    "address": "10901 SW 24th St, Miami, FL 33165",
+    "lat": 25.7483,
+    "lng": -80.3708,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "shelter-8",
+    "name": "Dr. Michael M. Krop Senior High (Hurricane Shelter)",
+    "type": "shelter",
+    "address": "1410 County Line Rd, Miami, FL 33179",
+    "lat": 25.9529,
+    "lng": -80.1718,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "shelter-9",
+    "name": "Felix Varela Senior High (Hurricane Shelter)",
+    "type": "shelter",
+    "address": "15255 SW 96th St, Miami, FL 33196",
+    "lat": 25.7001,
+    "lng": -80.4398,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "shelter-10",
+    "name": "Miami Southridge Senior High (Hurricane Shelter)",
+    "type": "shelter",
+    "address": "19355 SW 114th Ave, Cutler Bay, FL 33157",
+    "lat": 25.5848,
+    "lng": -80.3772,
+    "openNow": false,
+    "source": "static"
+  }
+]
