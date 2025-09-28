@@ -1,4 +1,122 @@
 [
-    {"id":"seed-shelter-1","name":"Miami-Dade Shelter A","type":"shelter","address":"123 Example St, Miami, FL","lat":25.774,"lng":-80.193,"openNow":false,"source":"seed"},
-    {"id":"seed-shelter-2","name":"Miami-Dade Shelter B","type":"shelter","address":"200 Example Ave, Miami, FL","lat":25.762,"lng":-80.205,"openNow":false,"source":"seed"}
+  {
+    "id": "seed-shelter-1",
+    "name": "Camillus House",
+    "type": "shelter",
+    "address": "1603 NW 7th Ave, Miami, FL 33136",
+    "lat": 25.7904,
+    "lng": -80.1993,
+    "openNow": false,
+    "source": "seed"
+  },
+  {
+    "id": "seed-food-bank-2",
+    "name": "Feeding South Florida",
+    "type": "food_bank",
+    "address": "2500 SW 32nd Terrace, Pembroke Park, FL 33023",
+    "lat": 25.9922,
+    "lng": -80.1818,
+    "openNow": false,
+    "source": "seed"
+  },
+  {
+    "id": "seed-shelter-3",
+    "name": "Lotus House Shelter",
+    "type": "shelter",
+    "address": "217 NW 15th St, Miami, FL 33136",
+    "lat": 25.7895,
+    "lng": -80.1952,
+    "openNow": false,
+    "source": "seed"
+  },
+  {
+    "id": "seed-clinic-4",
+    "name": "Jessie Trice Community Health System",
+    "type": "clinic",
+    "address": "5361 NW 22nd Ave, Miami, FL 33142",
+    "lat": 25.8239,
+    "lng": -80.2335,
+    "openNow": false,
+    "source": "seed"
+  },
+  {
+    "id": "seed-shelter-5",
+    "name": "Miami-Dade County Fair & Exposition Center",
+    "type": "shelter",
+    "address": "10901 SW 24th St, Miami, FL 33165",
+    "lat": 25.7483,
+    "lng": -80.3708,
+    "openNow": false,
+    "source": "seed"
+  },
+  {
+    "id": "seed-shelter-6",
+    "name": "Dr. Michael M. Krop Senior High",
+    "type": "shelter",
+    "address": "1410 County Line Rd, Miami, FL 33179",
+    "lat": 25.9529,
+    "lng": -80.1718,
+    "openNow": false,
+    "source": "seed"
+  },
+  {
+    "id": "seed-food-bank-7",
+    "name": "Curley's House Food Bank",
+    "type": "food_bank",
+    "address": "6025 NW 6th Ct, Miami, FL 33127",
+    "lat": 25.8298,
+    "lng": -80.2076,
+    "openNow": false,
+    "source": "seed"
+  },
+  {
+    "id": "seed-clinic-8",
+    "name": "Borinquen Medical Centers",
+    "type": "clinic",
+    "address": "3601 Federal Hwy, Miami, FL 33137",
+    "lat": 25.8105,
+    "lng": -80.1895,
+    "openNow": false,
+    "source": "seed"
+  },
+  {
+    "id": "seed-shelter-9",
+    "name": "Miami Rescue Mission",
+    "type": "shelter",
+    "address": "2020 NW 1st Ave, Miami, FL 33127",
+    "lat": 25.7951,
+    "lng": -80.1944,
+    "openNow": false,
+    "source": "seed"
+  },
+  {
+    "id": "seed-shelter-10",
+    "name": "Felix Varela Senior High School",
+    "type": "shelter",
+    "address": "15255 SW 96th St, Miami, FL 33196",
+    "lat": 25.7001,
+    "lng": -80.4398,
+    "openNow": false,
+    "source": "seed"
+  },
+  {
+    "id": "seed-food-bank-11",
+    "name": "Farm Share",
+    "type": "food_bank",
+    "address": "24400 S Dixie Hwy, Homestead, FL 33032",
+    "lat": 25.5312,
+    "lng": -80.3831,
+    "openNow": false,
+    "source": "seed"
+  },
+  {
+    "id": "seed-clinic-12",
+    "name": "Citrus Health Network",
+    "type": "clinic",
+    "address": "4175 W 20th Ave, Hialeah, FL 33012",
+    "lat": 25.8696,
+    "lng": -80.3283,
+    "openNow": false,
+    "source": "seed"
+  }
 ]

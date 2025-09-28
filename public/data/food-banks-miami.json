@@ -1,0 +1,102 @@
+[
+  {
+    "id": "food-1",
+    "name": "Feeding South Florida (Main Warehouse)",
+    "type": "food_bank",
+    "address": "2500 SW 32nd Terrace, Pembroke Park, FL 33023",
+    "lat": 25.9922,
+    "lng": -80.1818,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "food-2",
+    "name": "Farm Share – Homestead Warehouse",
+    "type": "food_bank",
+    "address": "24400 S Dixie Hwy, Homestead, FL 33032",
+    "lat": 25.5312,
+    "lng": -80.3831,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "food-3",
+    "name": "Farm Share – Florida City State Farmers’ Market",
+    "type": "food_bank",
+    "address": "300 N Krome Ave, Building 12, Florida City, FL 33034",
+    "lat": 25.4489,
+    "lng": -80.482,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "food-4",
+    "name": "Curley’s House of Style / Hope Relief Food Bank",
+    "type": "food_bank",
+    "address": "6025 NW 6th Ct, Miami, FL 33127",
+    "lat": 25.8298,
+    "lng": -80.2076,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "food-5",
+    "name": "Joshua’s Heart Foundation – Pantry",
+    "type": "food_bank",
+    "address": "2056 NE 155th St, North Miami Beach, FL 33162",
+    "lat": 25.9203,
+    "lng": -80.1609,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "food-6",
+    "name": "Pass It On Ministries of South Florida",
+    "type": "food_bank",
+    "address": "14617 NW 7th Ave, Miami, FL 33168",
+    "lat": 25.9091,
+    "lng": -80.212,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "food-7",
+    "name": "The Salvation Army – Center of Hope Pantry",
+    "type": "food_bank",
+    "address": "1907 NW 38th St, Miami, FL 33142",
+    "lat": 25.8122,
+    "lng": -80.2274,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "food-8",
+    "name": "JCS Kosher Food Bank",
+    "type": "food_bank",
+    "address": "15455 W Dixie Hwy, Bay R, North Miami Beach, FL 33162",
+    "lat": 25.9207,
+    "lng": -80.1581,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "food-9",
+    "name": "Village (FREE)DGE & Pantry – The Village Pantry",
+    "type": "food_bank",
+    "address": "5507 NW 7th Ave, Miami, FL 33127",
+    "lat": 25.827,
+    "lng": -80.207,
+    "openNow": false,
+    "source": "static"
+  },
+  {
+    "id": "food-10",
+    "name": "Bridge to Hope Food Pantry",
+    "type": "food_bank",
+    "address": "10844 SW 188th St, Cutler Bay, FL 33157",
+    "lat": 25.5929,
+    "lng": -80.3677,
+    "openNow": false,
+    "source": "static"
+  }
+]
