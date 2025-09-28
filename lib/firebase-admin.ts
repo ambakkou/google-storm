@@ -50,7 +50,7 @@ export function getFirestoreInstance() {
   if (!getApps().length) {
     initializeFirebaseAdmin();
   }
-  
+
   try {
     return getFirestore();
   } catch (error) {

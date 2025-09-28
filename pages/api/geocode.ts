@@ -8,7 +8,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!address) return res.status(400).json({ error: 'Address is required' });
     
     const key = process.env.GCP_SERVER_MAPS_KEY || process.env.NEXT_PUBLIC_MAPS_API_KEY;
-    
+
     if (!key) {
       return res.status(500).json({ error: 'Google Maps API key not configured' });
     }
@@ -21,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const data = await response.json();
     
     console.log('Geocoding response for:', address, 'Status:', data.status);
-    
+
     if (data.status === 'OK' && data.results.length > 0) {
       const { lat, lng } = data.results[0].geometry.location;
       console.log('Geocoded coordinates:', { lat, lng });
