@@ -3,7 +3,7 @@ import { getFirestoreInstance } from '@/lib/firebase-admin';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).end();
-  
+
   try {
     const { id } = req.body;
     const db = getFirestoreInstance();
@@ -21,14 +21,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(200).json({ ok: true });
   } catch (error: any) {
     console.error('Error approving resource:', error);
-    
+
     // If Firebase is not configured, return success anyway
-    if (error.message.includes('Firebase not properly configured') || 
+    if (error.message.includes('Firebase not properly configured') ||
         error.message.includes('Could not load the default credentials')) {
       console.warn('Firebase not configured, returning mock approval success');
       return res.status(200).json({ ok: true });
     }
-    
+
     res.status(500).json({ error: error.message });
   }
 }

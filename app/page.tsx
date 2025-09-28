@@ -4,10 +4,13 @@ import { useState, useEffect } from "react"
 import { ChatPanel } from "@/components/chat-panel"
 import { MapPanel } from "@/components/map-panel"
 import { AddResourceModal } from "@/components/add-resource-modal"
+import { WeatherAlertBanner } from "@/components/weather-alert-banner"
 import { Button } from "@/components/ui/button"
 import { Toaster } from "@/components/ui/toaster"
 import { Plus, MapPin, Settings } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { WeatherNotificationService } from "@/lib/weather-notifications"
+import { WeatherAlert } from "@/lib/weather-service"
 import Link from "next/link"
 
 export interface MapMarker {
@@ -27,12 +30,14 @@ export default function HomePage() {
   const [mapCenter, setMapCenter] = useState({ lat: 40.7128, lng: -74.006 })
   const [isAddResourceOpen, setIsAddResourceOpen] = useState(false)
   const [emergencyMode, setEmergencyMode] = useState(false)
+  const [hurricaneMode, setHurricaneMode] = useState(false)
   const [lastQuery, setLastQuery] = useState("")
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [lastSearchResults, setLastSearchResults] = useState(0)
   const [isUsingAI, setIsUsingAI] = useState(false)
   const { toast } = useToast()
+  const [weatherNotificationService] = useState(() => WeatherNotificationService.getInstance())
 
   // Get user location on component mount
   useEffect(() => {
@@ -50,6 +55,38 @@ export default function HomePage() {
       )
     }
   }, [])
+
+  // Initialize weather notifications
+  useEffect(() => {
+    weatherNotificationService.loadPersistedData()
+
+    if (userLocation) {
+      weatherNotificationService.startMonitoring(
+        userLocation.lat,
+        userLocation.lng,
+        (alerts: WeatherAlert[]) => {
+          if (alerts.length > 0) {
+            const urgentAlerts = alerts.filter(alert =>
+              alert.severity === 'severe' || alert.severity === 'extreme'
+            )
+
+            if (urgentAlerts.length > 0) {
+              toast({
+                title: "🚨 Urgent Weather Alert",
+                description: `${urgentAlerts[0].title} - ${urgentAlerts[0].description}`,
+                variant: "destructive",
+                duration: 10000,
+              })
+            }
+          }
+        }
+      )
+    }
+
+    return () => {
+      weatherNotificationService.stopMonitoring()
+    }
+  }, [userLocation, weatherNotificationService, toast])
 
   const handleChatSubmit = async (text: string) => {
     setLastQuery(text)
@@ -82,7 +119,7 @@ export default function HomePage() {
       let centerLat = userLocation?.lat || 25.774
       let centerLng = userLocation?.lng || -80.193
 
-      // Handle shelter category - load from seeds and approved resources
+      // Handle shelter category - load from seeds
       if (intent.categories?.includes("shelter")) {
         try {
           // Load seed data
@@ -207,7 +244,7 @@ export default function HomePage() {
         if (resourcesResponse.ok) {
           const { resources } = await resourcesResponse.json()
           const communityResources = resources
-            .filter((resource: any) => 
+            .filter((resource: any) =>
               intent.categories?.includes(resource.type)
             )
             .map((resource: any) => ({
@@ -363,16 +400,26 @@ export default function HomePage() {
         <ChatPanel
           onSubmitChat={handleChatSubmit}
           onEmergencyToggle={handleEmergencyToggle}
+          onHurricaneToggle={setHurricaneMode}
           emergencyMode={emergencyMode}
+          hurricaneMode={hurricaneMode}
           isLoading={isLoading}
           lastSearchResults={lastSearchResults}
           isUsingAI={isUsingAI}
+          userLocation={userLocation}
         />
       </div>
 
       {/* Map Panel */}
       <div className="flex-1 relative">
-        <MapPanel markers={markers} center={mapCenter} userLocation={userLocation || undefined} />
+        {/* Weather Alert Banner */}
+        {userLocation && (
+          <div className="absolute top-0 left-0 right-0 z-40 pt-12">
+            <WeatherAlertBanner lat={userLocation.lat} lng={userLocation.lng} />
+          </div>
+        )}
+
+        <MapPanel markers={markers} center={mapCenter} userLocation={userLocation || undefined} hurricaneMode={hurricaneMode} />
 
         {/* Floating Add Resource Button */}
         <Button
