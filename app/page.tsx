@@ -17,7 +17,7 @@ import Link from "next/link"
 export interface MapMarker {
   id: string
   name: string
-  type: "shelter" | "food_bank" | "clinic"
+  type: "shelter" | "food_bank" | "clinic" | "police" | "fire"
   lat: number
   lng: number
   distance?: string
@@ -58,6 +58,13 @@ export default function HomePage() {
   const [showCrowdDensity, setShowCrowdDensity] = useState(false)
   const { toast } = useToast()
   const [weatherNotificationService] = useState(() => WeatherNotificationService.getInstance())
+  const [activeFilters, setActiveFilters] = useState<Record<MapMarker['type'], boolean>>({
+    shelter: false,
+    food_bank: false,
+    clinic: false,
+    police: false,
+    fire: false,
+  })
 
   // Get user location on component mount
   useEffect(() => {
@@ -139,92 +146,33 @@ export default function HomePage() {
       let centerLat = userLocation?.lat || 25.774
       let centerLng = userLocation?.lng || -80.193
 
-      // Handle shelter category - load from seeds
+      // Handle shelter category - use Places with unified radius
       if (intent.categories?.includes("shelter")) {
         try {
-          // Load seed data
-          const shelterResponse = await fetch("/api/shelters")
-          if (shelterResponse.ok) {
-            const shelterData = await shelterResponse.json()
-            const shelterMarkers = shelterData.map((shelter: any) => ({
-              id: shelter.id,
-              name: shelter.name,
-              type: shelter.type as MapMarker["type"],
-              lat: shelter.lat,
-              lng: shelter.lng,
-              openNow: shelter.openNow,
-              source: shelter.source,
+          // Use Places for chat/emergency shelter searches (do NOT surface seed JSON here)
+          const placesResponse = await fetch(
+            `/api/places?type=shelter&lat=${centerLat}&lng=${centerLng}&radius=5000&q=${encodeURIComponent(text)}`
+          )
+          if (placesResponse.ok) {
+            const { results } = await placesResponse.json()
+            const shelterMarkers = (results || []).map((place: any) => ({
+              id: place.id,
+              name: place.name,
+              type: (place.type || 'shelter') as MapMarker["type"],
+              lat: place.lat,
+              lng: place.lng,
+              openNow: place.openNow,
+              source: place.source,
+              address: place.address,
             }))
             allMarkers.push(...shelterMarkers)
-            
-            // Set center to first shelter or average
             if (shelterMarkers.length > 0) {
               centerLat = shelterMarkers[0].lat
               centerLng = shelterMarkers[0].lng
             }
-          } else {
-            // Fallback shelter data if file not accessible
-            console.warn("Shelter data file not accessible, using fallback data")
-            const fallbackShelters = [
-              {
-                id: "fallback-shelter-1",
-                name: "Miami Emergency Shelter",
-                type: "shelter" as MapMarker["type"],
-                lat: centerLat + 0.005,
-                lng: centerLng - 0.005,
-                openNow: true,
-                source: "fallback",
-              },
-              {
-                id: "fallback-shelter-2", 
-                name: "Downtown Crisis Shelter",
-                type: "shelter" as MapMarker["type"],
-                lat: centerLat - 0.003,
-                lng: centerLng + 0.003,
-                openNow: false,
-                source: "fallback",
-              }
-            ]
-            allMarkers.push(...fallbackShelters)
-          }
-
-          // Load approved community resources for shelters
-          try {
-            const resourcesResponse = await fetch("/api/resources")
-            if (resourcesResponse.ok) {
-              const { resources } = await resourcesResponse.json()
-              const shelterResources = resources
-                .filter((resource: any) => resource.type === "shelter")
-                .map((resource: any) => ({
-                  id: `community-${resource.id}`,
-                  name: resource.name,
-                  type: resource.type as MapMarker["type"],
-                  lat: resource.lat,
-                  lng: resource.lng,
-                  openNow: null,
-                  source: "community",
-                  address: resource.address,
-                }))
-              allMarkers.push(...shelterResources)
-            }
-          } catch (error) {
-            console.error("Failed to load community resources:", error)
           }
         } catch (error) {
-          console.error("Failed to load shelter data:", error)
-          // Fallback shelter data on error
-          const fallbackShelters = [
-            {
-              id: "error-shelter-1",
-              name: "Emergency Shelter (Fallback)",
-              type: "shelter" as MapMarker["type"],
-              lat: centerLat,
-              lng: centerLng,
-              openNow: true,
-              source: "fallback",
-            }
-          ]
-          allMarkers.push(...fallbackShelters)
+          console.error("Failed to search shelters via Places:", error)
         }
       }
 
@@ -235,8 +183,9 @@ export default function HomePage() {
 
       for (const type of placeTypes) {
         try {
+          // Use the same unified radius for all chat place lookups
           const placesResponse = await fetch(
-            `/api/places?type=${type}&lat=${centerLat}&lng=${centerLng}&radius=2500&openNow=${intent.openNowPreferred || false}&q=${encodeURIComponent(text)}`
+            `/api/places?type=${type}&lat=${centerLat}&lng=${centerLng}&radius=5000&openNow=${intent.openNowPreferred || false}&q=${encodeURIComponent(text)}`
           )
           
           if (placesResponse.ok) {
@@ -255,6 +204,41 @@ export default function HomePage() {
           }
         } catch (error) {
           console.error(`Failed to load ${type} data:`, error)
+        }
+      }
+
+      // Handle emergency categories: police or fire (use same /api/places flow as other chat place lookups)
+      const emergencyCats = intent.categories?.filter((cat: string) => cat === 'police' || cat === 'fire') || []
+      if (emergencyCats.length > 0) {
+        for (const type of emergencyCats) {
+          try {
+            const lat = userLocation?.lat || centerLat
+            const lng = userLocation?.lng || centerLng
+            const placesResponse = await fetch(
+              `/api/places?type=${type}&lat=${lat}&lng=${lng}&radius=5000&q=${encodeURIComponent(text)}`
+            )
+
+            if (placesResponse.ok) {
+              const { results } = await placesResponse.json()
+              const emergencyMarkers = (results || []).map((place: any) => ({
+                id: place.id,
+                name: place.name,
+                type: place.type as MapMarker['type'],
+                lat: place.lat,
+                lng: place.lng,
+                openNow: place.openNow,
+                source: place.source,
+                address: place.address,
+              }))
+              allMarkers.push(...emergencyMarkers)
+              if (emergencyMarkers.length > 0) {
+                centerLat = emergencyMarkers[0].lat
+                centerLng = emergencyMarkers[0].lng
+              }
+            }
+          } catch (err) {
+            console.error('Failed to load emergency places for chat:', err)
+          }
         }
       }
 
@@ -289,7 +273,7 @@ export default function HomePage() {
       if (allMarkers.length > 0) {
         setShowResultsPanel(true)
       }
-      
+
       if (allMarkers.length > 0) {
         toast({
           title: "Resources Found",
@@ -337,21 +321,23 @@ export default function HomePage() {
         const { intent } = await intentResponse.json()
         console.log("Emergency intent received:", intent)
 
-        // Load shelter data only
+        // Load shelter data for emergency mode via Places (do not return seed JSON unless user pressed the Shelters button)
         try {
-          const shelterResponse = await fetch("/api/shelters")
-          if (shelterResponse.ok) {
-            const shelterData = await shelterResponse.json()
-            const shelterMarkers = shelterData.map((shelter: any) => ({
-              id: shelter.id,
-              name: shelter.name,
-              type: shelter.type as MapMarker["type"],
-              lat: shelter.lat,
-              lng: shelter.lng,
-              openNow: shelter.openNow,
-              source: shelter.source,
+          const lat = userLocation?.lat || 25.774
+          const lng = userLocation?.lng || -80.193
+          const placesResponse = await fetch(`/api/places?type=shelter&lat=${lat}&lng=${lng}&radius=5000&openNow=true`)
+          if (placesResponse.ok) {
+            const { results } = await placesResponse.json()
+            const shelterMarkers = (results || []).map((place: any) => ({
+              id: place.id,
+              name: place.name,
+              type: (place.type || 'shelter') as MapMarker["type"],
+              lat: place.lat,
+              lng: place.lng,
+              openNow: place.openNow,
+              source: place.source,
+              address: place.address,
             }))
-            
             setMarkers(shelterMarkers)
             if (shelterMarkers.length > 0) {
               setMapCenter({ lat: shelterMarkers[0].lat, lng: shelterMarkers[0].lng })
@@ -359,7 +345,7 @@ export default function HomePage() {
             }
           }
         } catch (error) {
-          console.error("Failed to load emergency shelter data:", error)
+          console.error("Failed to load emergency shelter data (Places):", error)
         }
       } catch (error) {
         console.error("Failed to handle emergency toggle:", error)
@@ -404,15 +390,64 @@ export default function HomePage() {
     }
   }
 
+  // Toggle Places-based lists (Food Banks, Shelters, Clinics) on/off
+  const toggleStaticList = async (type: MapMarker['type']) => {
+    const currentlyActive = activeFilters[type]
+    // Turn off: remove place markers for this type
+    if (currentlyActive) {
+      setActiveFilters(prev => ({ ...prev, [type]: false }))
+      setMarkers(prev => prev.filter(m => !(m.source === 'places' && m.type === type)))
+      return
+    }
+
+    // Turn on: call the /api/places endpoint to get live results (same pattern as Emergency Services)
+    setIsLoading(true)
+    try {
+  const lat = userLocation?.lat || 25.774
+  const lng = userLocation?.lng || -80.193
+  // Call per-type endpoints (shelters, food-banks, clinics)
+  const endpoint = type === 'shelter' ? '/api/shelters' : type === 'food_bank' ? '/api/food-banks' : '/api/clinics'
+  const resp = await fetch(`${endpoint}?lat=${lat}&lng=${lng}&radius=20000`)
+      if (!resp.ok) throw new Error('Failed to load places')
+      const { results } = await resp.json()
+
+      const newMarkers: MapMarker[] = (results || []).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        type: p.type,
+        lat: p.lat,
+        lng: p.lng,
+        openNow: p.openNow ?? null,
+        source: p.source ?? 'places',
+        address: p.address,
+      }))
+
+      // Remove any existing place markers of this type then append fresh ones
+      setMarkers(prev => {
+        const filtered = prev.filter(m => !(m.source === 'places' && m.type === type))
+        return [...filtered, ...newMarkers]
+      })
+      setActiveFilters(prev => ({ ...prev, [type]: true }))
+      if (newMarkers.length > 0) setMapCenter({ lat: newMarkers[0].lat, lng: newMarkers[0].lng })
+      setLastSearchResults(prev => {
+        try { return markers.length + newMarkers.length } catch (e) { return newMarkers.length }
+      })
+    } catch (e) {
+      console.error(`Failed to load ${type} via Places`, e)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const handleToggleCrowdDensity = async (show: boolean) => {
     setShowCrowdDensity(show)
-    
+
     if (show && userLocation) {
       try {
         const response = await fetch(
           `/api/population-density?lat=${userLocation.lat}&lng=${userLocation.lng}&radius=25000`
         )
-        
+
         if (response.ok) {
           const data = await response.json()
           setDensityZones(data.zones)
@@ -433,12 +468,56 @@ export default function HomePage() {
       <div className="absolute top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center justify-between px-4 py-2">
           <h1 className="text-lg font-semibold">Google Storm</h1>
-          <Link href="/admin">
-            <Button variant="ghost" size="sm">
-              <Settings className="w-4 h-4 mr-2" />
-              Admin
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant={activeFilters.food_bank ? 'secondary' : 'ghost'} onClick={() => toggleStaticList('food_bank')}>Food Banks</Button>
+
+            <Button size="sm" variant={activeFilters.shelter ? 'secondary' : 'ghost'} onClick={() => toggleStaticList('shelter')}>Shelters</Button>
+
+            <Button size="sm" variant={activeFilters.clinic ? 'secondary' : 'ghost'} onClick={() => toggleStaticList('clinic')}>Clinics</Button>
+
+              <Button size="sm" variant={activeFilters.police || activeFilters.fire ? 'secondary' : 'ghost'} onClick={async () => {
+              // Toggle Emergency Services (police + fire)
+              const currentlyActive = activeFilters.police || activeFilters.fire
+              if (currentlyActive) {
+                // turn off both
+                setActiveFilters(prev => ({ ...prev, police: false, fire: false }))
+                setMarkers(prev => prev.filter(m => !(m.type === 'police' || m.type === 'fire')))
+                return
+              }
+
+              setIsLoading(true)
+              try {
+                const lat = userLocation?.lat || 25.774
+                const lng = userLocation?.lng || -80.193
+                // Increase radius to 20km for emergency services to broaden coverage
+                const resp = await fetch(`/api/emergency-list?lat=${lat}&lng=${lng}&radius=20000`)
+                if (resp.ok) {
+                  const { results } = await resp.json()
+                  const newMarkers = results.map((p: any) => ({
+                    id: p.id,
+                    name: p.name,
+                    type: p.type as MapMarker['type'],
+                    lat: p.lat,
+                    lng: p.lng,
+                    openNow: p.openNow ?? null,
+                    source: p.source ?? 'places',
+                    address: p.address,
+                  }))
+                  setMarkers(prev => [...prev.filter(m => !(m.type === 'police' || m.type === 'fire')), ...newMarkers])
+                  setActiveFilters(prev => ({ ...prev, police: true, fire: true }))
+                }
+              } catch (e) {
+                console.error('Failed to load emergency services', e)
+              } finally { setIsLoading(false) }
+            }}>Emergency Services</Button>
+
+            <Link href="/admin">
+              <Button variant="ghost" size="sm">
+                <Settings className="w-4 h-4 mr-2" />
+                Admin
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -483,10 +562,10 @@ export default function HomePage() {
           </div>
         )}
 
-        <MapPanel 
-          markers={markers} 
-          center={mapCenter} 
-          userLocation={userLocation || undefined} 
+        <MapPanel
+          markers={markers}
+          center={mapCenter}
+          userLocation={userLocation || undefined}
           hurricaneMode={hurricaneMode}
           densityZones={densityZones}
           showResultsPanel={showResultsPanel}

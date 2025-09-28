@@ -6,9 +6,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const key = process.env.GCP_SERVER_MAPS_KEY;
     const loc = `${lat},${lng}`;
 
-    // Decide query: clinics/food banks via Text Search; shelters usually from seeds
-    const textQuery = q || (type === 'clinic' ? 'free clinic emergency medical' :
-                            type === 'food_bank' ? 'food bank food pantry emergency food' : '');
+  // Decide query: provide sensible defaults for each supported type
+  const textQuery = q || (type === 'clinic' ? 'free clinic emergency medical'
+              : type === 'food_bank' ? 'food bank food pantry emergency food'
+              : type === 'shelter' ? 'homeless shelter emergency shelter'
+              : type === 'police' ? 'police station law enforcement'
+              : type === 'fire' ? 'fire station fire department' : '');
 
     if (!textQuery) return res.status(200).json({ results: [] });
 
@@ -151,5 +154,86 @@ function generateMockPlaces(type: string, lat: string, lng: string) {
     ];
   }
   
+  if (type === 'police') {
+    return [
+      {
+        id: 'mock-police-1',
+        name: 'Miami Police Dept. - Central',
+        type: 'police',
+        address: '400 NW 2nd Ave, Miami, FL',
+        lat: baseLat + 0.005,
+        lng: baseLng - 0.003,
+        openNow: true,
+        source: 'mock',
+        url: '#'
+      },
+      {
+        id: 'mock-police-2',
+        name: 'Little Havana Police Station',
+        type: 'police',
+        address: '501 SW 12th Ave, Miami, FL',
+        lat: baseLat - 0.007,
+        lng: baseLng + 0.004,
+        openNow: true,
+        source: 'mock',
+        url: '#'
+      }
+    ]
+  }
+
+  if (type === 'fire') {
+    return [
+      {
+        id: 'mock-fire-1',
+        name: 'Miami Fire Rescue Station 1',
+        type: 'fire',
+        address: '200 NW 2nd Ave, Miami, FL',
+        lat: baseLat + 0.006,
+        lng: baseLng - 0.002,
+        openNow: true,
+        source: 'mock',
+        url: '#'
+      },
+      {
+        id: 'mock-fire-2',
+        name: 'Coral Gables Fire Station',
+        type: 'fire',
+        address: '2200 Ponce de Leon Blvd, Coral Gables, FL',
+        lat: baseLat - 0.01,
+        lng: baseLng + 0.01,
+        openNow: true,
+        source: 'mock',
+        url: '#'
+      }
+    ]
+  }
+
+  if (type === 'shelter') {
+    return [
+      {
+        id: 'mock-shelter-1',
+        name: 'Downtown Emergency Shelter',
+        type: 'shelter',
+        address: '123 Main St, Miami, FL',
+        lat: baseLat + 0.004,
+        lng: baseLng + 0.002,
+        openNow: true,
+        source: 'mock',
+        url: '#'
+      },
+      {
+        id: 'mock-shelter-2',
+        name: 'Harbor Light Shelter',
+        type: 'shelter',
+        address: '78 Harbor Way, Miami, FL',
+        lat: baseLat - 0.006,
+        lng: baseLng - 0.005,
+        openNow: false,
+        source: 'mock',
+        url: '#'
+      }
+    ]
+  }
+
   return [];
 }
