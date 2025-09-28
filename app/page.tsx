@@ -467,6 +467,10 @@ export default function HomePage() {
           zones={densityZones}
           showPanel={showCrowdDensity}
           onClose={() => setShowCrowdDensity(false)}
+          onZoneClick={(zone) => {
+            // Center map on the selected density zone
+            setMapCenter({ lat: zone.lat, lng: zone.lng })
+          }}
         />
       )}
 
