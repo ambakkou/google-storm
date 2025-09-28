@@ -1,0 +1,152 @@
+{
+  "clinic-1": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:11:51.555Z",
+    "placeId": "ChIJT0xNG5vE2YgRgJKki4hFNOc",
+    "method": "findplace"
+  },
+  "clinic-2": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:11:51.570Z",
+    "placeId": "ChIJNYtSpJe22YgRB6d0_7c3ILA",
+    "method": "findplace"
+  },
+  "clinic-3": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:11:51.585Z",
+    "placeId": "ChIJOZr9kVax2YgRgVB7FGwMUfY",
+    "method": "findplace"
+  },
+  "clinic-4": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:11:51.599Z",
+    "placeId": "ChIJ6ftNf1ax2YgRFPPtaeyev-8",
+    "method": "findplace"
+  },
+  "clinic-5": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:11:51.613Z",
+    "placeId": "ChIJOZ0hrNiw2YgRs93fXCQMxh0",
+    "method": "findplace"
+  },
+  "clinic-7": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:11:51.644Z",
+    "placeId": "ChIJtz-8y4q02YgRntLVdHm3Sxw",
+    "method": "findplace"
+  },
+  "clinic-8": {
+    "openNow": true,
+    "lastUpdated": "2025-09-28T04:11:51.656Z",
+    "placeId": "ChIJ3ZeV9aCw2YgRM6ZFICj2Jbw",
+    "method": "findplace"
+  },
+  "clinic-9": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:11:51.671Z",
+    "placeId": "ChIJS-AcIZW32YgRe6uKgYWWYRU",
+    "method": "findplace"
+  },
+  "clinic-10": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:11:51.683Z",
+    "placeId": "ChIJGwALczC_2YgRY6UYpO7aWhc",
+    "method": "findplace"
+  },
+  "food-1": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:17:03.550Z",
+    "placeId": "ChIJd5N5qwms2YgRiAQnKRjuuEo",
+    "method": "findplace"
+  },
+  "food-2": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:17:03.569Z",
+    "placeId": "ChIJkacR4Lbd2YgRoNFn0cnny4M",
+    "method": "findplace"
+  },
+  "food-4": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:17:04.142Z",
+    "placeId": "ChIJAZWRVcUD2YgRK1dizNHQnZA",
+    "method": "findplace"
+  },
+  "food-5": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:17:04.169Z",
+    "placeId": "ChIJd0dViL2t2YgRyeZe_8oWw9o",
+    "method": "findplace"
+  },
+  "food-6": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:17:04.183Z",
+    "placeId": "ChIJOVyy6yKu2YgRbqHtgKigCi4",
+    "method": "findplace"
+  },
+  "food-9": {
+    "openNow": true,
+    "lastUpdated": "2025-09-28T04:17:04.370Z",
+    "placeId": "ChIJGVxwPPWx2YgR_v_CFoiYs3Q",
+    "method": "findplace"
+  },
+  "food-10": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:17:04.394Z",
+    "placeId": "ChIJAQBQsN7c2YgRfa7xSBTkh48",
+    "method": "findplace"
+  },
+  "food-7": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:17:04.197Z",
+    "placeId": "ChIJETvhLyqx2YgR0gzCKgj4e6c",
+    "method": "findplace"
+  },
+  "shelter-1": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:13:28.195Z",
+    "placeId": "ChIJNYtSpJe22YgR8ZQTS2ee0iQ",
+    "method": "findplace"
+  },
+  "shelter-3": {
+    "openNow": true,
+    "lastUpdated": "2025-09-28T04:13:28.914Z",
+    "placeId": "ChIJ69uT07q22YgRfW-PSlhCX7A",
+    "method": "findplace"
+  },
+  "shelter-4": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:13:29.353Z",
+    "placeId": "ChIJBd1htKW22YgRF_X7Hjf8afk",
+    "method": "findplace"
+  },
+  "shelter-5": {
+    "openNow": true,
+    "lastUpdated": "2025-09-28T04:13:29.795Z",
+    "placeId": "ChIJj0qCCezc2YgRmCSQdAquCQY",
+    "method": "findplace"
+  },
+  "shelter-6": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:13:30.193Z",
+    "placeId": "ChIJETvhLyqx2YgR0gzCKgj4e6c",
+    "method": "findplace"
+  },
+  "shelter-8": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:13:30.909Z",
+    "placeId": "ChIJKTPrGhes2YgR_V0kHsaMQUA",
+    "method": "findplace"
+  },
+  "shelter-9": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:13:31.252Z",
+    "placeId": "ChIJ9Y93Q83B2YgR60vRIhacNVo",
+    "method": "findplace"
+  },
+  "shelter-10": {
+    "openNow": false,
+    "lastUpdated": "2025-09-28T04:13:31.815Z",
+    "placeId": "ChIJgaqKh4PD2YgRDwc62Qyh5jc",
+    "method": "findplace"
+  }
+}

@@ -275,7 +275,7 @@ export function MapPanel({
     } else {
       // Clear hurricane data when mode is disabled
       setHurricaneData([])
-      
+
       // Return to user location when hurricane mode is disabled
       if (mapInstanceRef.current && userLocation) {
         mapInstanceRef.current.panTo({ lat: userLocation.lat, lng: userLocation.lng })
@@ -456,11 +456,11 @@ export function MapPanel({
   // Handle center changes (for density zone selection)
   useEffect(() => {
     if (!mapInstanceRef.current) return
-    
+
     // Only update center if it's different from current map center
     const currentCenter = mapInstanceRef.current.getCenter()
-    if (currentCenter && 
-        (Math.abs(currentCenter.lat() - center.lat) > 0.001 || 
+    if (currentCenter &&
+        (Math.abs(currentCenter.lat() - center.lat) > 0.001 ||
          Math.abs(currentCenter.lng() - center.lng) > 0.001)) {
       mapInstanceRef.current.panTo({ lat: center.lat, lng: center.lng })
       mapInstanceRef.current.setZoom(13) // Set higher zoom for better density zone visibility
@@ -721,15 +721,19 @@ export function MapPanel({
 
   const getMarkerIcon = (type: MapMarker["type"]) => {
     const colors = {
-      shelter: "#dc2626", // red
-      food_bank: "#2563eb", // blue
-      clinic: "#16a34a", // green
+      shelter: '#dc2626', // red
+      food_bank: '#2563eb', // blue
+      clinic: '#16a34a', // green
+      police: '#111827', // dark gray / black
+      fire: '#f97316', // orange
     }
 
     const icons = {
-      shelter: "🏠",
-      food_bank: "🍽️",
-      clinic: "🏥",
+      shelter: '🏠',
+      food_bank: '🍽️',
+      clinic: '🏥'
+      ,police: '🚓',
+      fire: '🚒'
     }
 
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
@@ -750,6 +754,10 @@ export function MapPanel({
         return "bg-primary text-primary-foreground"
       case "clinic":
         return "bg-accent text-accent-foreground"
+      case "police":
+        return "bg-black text-white"
+      case "fire":
+        return "bg-orange-500 text-white"
       default:
         return "bg-secondary text-secondary-foreground"
     }
@@ -763,6 +771,10 @@ export function MapPanel({
         return "Food Bank"
       case "clinic":
         return "Clinic"
+      case "police":
+        return "Police Station"
+      case "fire":
+        return "Fire Station"
       default:
         return "Resource"
     }
@@ -776,6 +788,10 @@ export function MapPanel({
         return "bg-blue-100 text-blue-800"
       case "clinic":
         return "bg-green-100 text-green-800"
+      case "police":
+        return "bg-gray-800 text-white"
+      case "fire":
+        return "bg-orange-100 text-orange-800"
       default:
         return "bg-gray-100 text-gray-800"
     }
