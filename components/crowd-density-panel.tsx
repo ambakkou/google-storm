@@ -25,6 +25,7 @@ interface CrowdDensityPanelProps {
   zones: DensityZone[]
   showPanel: boolean
   onClose: () => void
+  onZoneClick?: (zone: DensityZone) => void
 }
 
 const getRiskIcon = (riskLevel: string) => {
@@ -67,7 +68,7 @@ const getDensityLabel = (density: string) => {
   }
 }
 
-export function CrowdDensityPanel({ zones, showPanel, onClose }: CrowdDensityPanelProps) {
+export function CrowdDensityPanel({ zones, showPanel, onClose, onZoneClick }: CrowdDensityPanelProps) {
   if (!showPanel || zones.length === 0) {
     return null
   }
@@ -98,29 +99,43 @@ export function CrowdDensityPanel({ zones, showPanel, onClose }: CrowdDensityPan
       {/* Density Zones List */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {sortedZones.map((zone) => (
-          <Card key={zone.id} className="p-4">
+          <Card 
+            key={zone.id} 
+            className={`group p-4 transition-all duration-200 cursor-pointer hover:shadow-lg hover:scale-[1.02] hover:bg-accent/50 ${
+              zone.riskLevel === 'high' || zone.riskLevel === 'very_high' 
+                ? 'hover:border-red-300 hover:bg-red-50/50' 
+                : zone.riskLevel === 'medium'
+                ? 'hover:border-yellow-300 hover:bg-yellow-50/50'
+                : 'hover:border-green-300 hover:bg-green-50/50'
+            }`}
+            onClick={() => onZoneClick?.(zone)}
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                {getRiskIcon(zone.riskLevel)}
+                <div className="transition-transform duration-200 group-hover:scale-110">
+                  {getRiskIcon(zone.riskLevel)}
+                </div>
                 <div className="flex-1">
-                  <div className="font-medium text-sm mb-1">{zone.name}</div>
-                  <div className="text-xs text-muted-foreground mb-2">
+                  <div className="font-medium text-sm mb-1 group-hover:text-foreground transition-colors">
+                    {zone.name}
+                  </div>
+                  <div className="text-xs text-muted-foreground mb-2 group-hover:text-foreground/80 transition-colors">
                     {zone.distance.toFixed(1)}km away • {zone.population.toLocaleString()} people
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-xs text-muted-foreground group-hover:text-foreground/80 transition-colors">
                     {zone.description}
                   </div>
                 </div>
               </div>
               
               <div className="text-right space-y-1">
-                <Badge className={getRiskBadgeColor(zone.riskLevel)}>
+                <Badge className={`${getRiskBadgeColor(zone.riskLevel)} transition-all duration-200 group-hover:scale-105`}>
                   {zone.riskLevel.replace('_', ' ')}
                 </Badge>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-muted-foreground group-hover:text-foreground/80 transition-colors">
                   {getDensityLabel(zone.density)}
                 </div>
-                <div className="text-xs font-medium">
+                <div className="text-xs font-medium group-hover:text-foreground transition-colors">
                   Crowd Score: {zone.crowdingScore}/100
                 </div>
               </div>
