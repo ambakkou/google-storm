@@ -686,6 +686,7 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
           </Card>
         </div>
       )}
+
     </div>
   )
 }

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Card } from "@/components/ui/card"
-import { Send, AlertTriangle, CloudRain, Settings, Wind } from "lucide-react"
+import { Send, AlertTriangle, CloudRain, Settings, Wind, Eye, EyeOff } from "lucide-react"
 import { WeatherPanel } from "@/components/weather-panel"
 import { WeatherSettingsModal } from "@/components/weather-settings-modal"
 
@@ -28,9 +28,11 @@ interface ChatPanelProps {
   lastSearchResults?: number
   isUsingAI?: boolean
   userLocation?: { lat: number; lng: number } | null
+  showCrowdDensity?: boolean
+  onToggleCrowdDensity?: (show: boolean) => void
 }
 
-export function ChatPanel({ onSubmitChat, onEmergencyToggle, onHurricaneToggle, emergencyMode, hurricaneMode, isLoading = false, lastSearchResults = 0, isUsingAI = false, userLocation }: ChatPanelProps) {
+export function ChatPanel({ onSubmitChat, onEmergencyToggle, onHurricaneToggle, emergencyMode, hurricaneMode, isLoading = false, lastSearchResults = 0, isUsingAI = false, userLocation, showCrowdDensity = false, onToggleCrowdDensity }: ChatPanelProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "1",
@@ -119,6 +121,19 @@ export function ChatPanel({ onSubmitChat, onEmergencyToggle, onHurricaneToggle, 
               Weather Alert Settings
             </Button>
           </WeatherSettingsModal>
+        </div>
+
+        {/* Crowd Density Toggle Button */}
+        <div className="flex justify-center mt-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full"
+            onClick={() => onToggleCrowdDensity?.(!showCrowdDensity)}
+          >
+            {showCrowdDensity ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
+            {showCrowdDensity ? "Hide Crowd Density" : "Show Crowd Density"}
+          </Button>
         </div>
       </div>
 

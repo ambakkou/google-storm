@@ -770,6 +770,7 @@ export function LiveMapPanel({ markers, center, userLocation, hurricaneMode = fa
           </Card>
         </div>
       )}
+
     </div>
   )
 }
