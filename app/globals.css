@@ -94,3 +94,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Google Places Autocomplete dropdown styling */
+.pac-container {
+  z-index: 99999 !important;
+  position: absolute !important;
+  pointer-events: auto !important;
+}
