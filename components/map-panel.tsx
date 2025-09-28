@@ -7,7 +7,14 @@ import { Button } from "@/components/ui/button"
 import { MapPin, Clock, Loader2, X } from "lucide-react"
 import type { MapMarker } from "@/app/page"
 import { Loader } from "@googlemaps/js-api-loader"
-import { HurricaneTrack, HurricanePosition } from "@/lib/hurricane-service"
+import type { HurricaneTrack } from "@/lib/hurricane-service"
+
+// Declare global google maps types
+declare global {
+  interface Window {
+    google: typeof google
+  }
+}
 
 interface DensityZone {
   id: string
@@ -35,7 +42,15 @@ interface MapPanelProps {
   onCloseResultsPanel?: () => void
 }
 
-export function MapPanel({ markers, center, userLocation, hurricaneMode = false, densityZones = [], showResultsPanel = true, onCloseResultsPanel }: MapPanelProps) {
+export function MapPanel({
+  markers,
+  center,
+  userLocation,
+  hurricaneMode = false,
+  densityZones = [],
+  showResultsPanel = true,
+  onCloseResultsPanel,
+}: MapPanelProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<google.maps.Map | null>(null)
   const markersRef = useRef<google.maps.Marker[]>([])
@@ -51,13 +66,202 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
   const fetchHurricaneData = async () => {
     try {
       setHurricaneLoading(true)
-      const response = await fetch('/api/hurricanes?near_florida=true')
+      const response = await fetch("/api/hurricanes")
       const data = await response.json()
       setHurricaneData(data.hurricanes || [])
     } catch (error) {
-      console.error('Failed to fetch hurricane data:', error)
+      console.error("Failed to fetch hurricane data:", error)
     } finally {
       setHurricaneLoading(false)
+    }
+  }
+
+  // Create realistic cyclone icon with swirling storm bands
+  const createAnimatedHurricaneIcon = (hurricane: HurricaneTrack) => {
+    const category = hurricane.currentPosition.category || 0
+    const windSpeed = hurricane.currentPosition.windSpeed
+    const color = getHurricaneColor(category)
+    const lat = hurricane.currentPosition.lat
+
+    // Determine size based on category and wind speed
+    const baseSize = 80
+    const categoryMultiplier = Math.max(1, category)
+    const windMultiplier = Math.min(1.5, windSpeed / 100)
+    const size = Math.max(60, Math.min(140, baseSize + categoryMultiplier * 15 + windMultiplier * 20))
+
+    // Determine rotation direction based on hemisphere
+    const isNorthernHemisphere = lat > 0
+    const rotationDirection = isNorthernHemisphere ? 1 : -1
+
+    const svg = `
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <!-- Hurricane gradient -->
+          <radialGradient id="hurricaneGradient${hurricane.id}" cx="50%" cy="50%" r="60%">
+            <stop offset="0%" style="stop-color:white;stop-opacity:0.9" />
+            <stop offset="30%" style="stop-color:${color};stop-opacity:0.8" />
+            <stop offset="70%" style="stop-color:${color};stop-opacity:0.6" />
+            <stop offset="100%" style="stop-color:${color};stop-opacity:0.4" />
+          </radialGradient>
+          
+          <!-- Enhanced glow effect -->
+          <filter id="hurricaneGlow${hurricane.id}" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+            <feMerge> 
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+          
+          <!-- Drop shadow -->
+          <filter id="dropShadow${hurricane.id}" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="1" dy="1" stdDeviation="2" floodColor="rgba(0,0,0,0.3)"/>
+          </filter>
+          
+          <!-- Pulsing animation -->
+          <animate id="pulse${hurricane.id}" attributeName="r" values="${size/2 - 8};${size/2 - 3};${size/2 - 8}" dur="3s" repeatCount="indefinite"/>
+        </defs>
+        
+        <!-- Outer atmospheric ring with pulsing -->
+        <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 2}" 
+                fill="none" stroke="${color}" stroke-width="1" opacity="0.3">
+          <animate attributeName="opacity" values="0.3;0.7;0.3" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        
+        <!-- Wind particles -->
+        <g>
+          <animateTransform
+            attributeName="transform"
+            attributeType="XML"
+            type="rotate"
+            from="0 ${size / 2} ${size / 2}"
+            to="${360 * rotationDirection} ${size / 2} ${size / 2}"
+            dur="4s"
+            repeatCount="indefinite"/>
+          <circle cx="${size / 2 + 30}" cy="${size / 2}" r="1" fill="white" opacity="0.8">
+            <animate attributeName="opacity" values="0.8;0.2;0.8" dur="1.5s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="${size / 2 - 25}" cy="${size / 2 + 20}" r="0.8" fill="white" opacity="0.6">
+            <animate attributeName="opacity" values="0.6;0.1;0.6" dur="1.8s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="${size / 2 + 20}" cy="${size / 2 - 25}" r="0.6" fill="white" opacity="0.7">
+            <animate attributeName="opacity" values="0.7;0.2;0.7" dur="1.2s" repeatCount="indefinite"/>
+          </circle>
+        </g>
+        
+        <!-- Outer spiral band -->
+        <g>
+          <animateTransform
+            attributeName="transform"
+            attributeType="XML"
+            type="rotate"
+            from="0 ${size / 2} ${size / 2}"
+            to="${360 * rotationDirection} ${size / 2} ${size / 2}"
+            dur="8s"
+            repeatCount="indefinite"/>
+          <path d="M ${size / 2} ${size / 2 - 35} 
+                   A 30 30 0 0 ${rotationDirection > 0 ? 1 : 0} ${size / 2 + 35} ${size / 2}
+                   A 25 25 0 0 ${rotationDirection > 0 ? 1 : 0} ${size / 2} ${size / 2 + 30}
+                   A 20 20 0 0 ${rotationDirection > 0 ? 1 : 0} ${size / 2 - 30} ${size / 2}
+                   A 25 25 0 0 ${rotationDirection > 0 ? 1 : 0} ${size / 2} ${size / 2 - 35}" 
+                fill="none" stroke="${color}" stroke-width="3" opacity="0.7">
+            <animate attributeName="stroke-width" values="3;4;3" dur="2.5s" repeatCount="indefinite"/>
+          </path>
+        </g>
+        
+        <!-- Middle spiral band -->
+        <g>
+          <animateTransform
+            attributeName="transform"
+            attributeType="XML"
+            type="rotate"
+            from="0 ${size / 2} ${size / 2}"
+            to="${360 * rotationDirection} ${size / 2} ${size / 2}"
+            dur="6s"
+            repeatCount="indefinite"/>
+          <path d="M ${size / 2} ${size / 2 - 25} 
+                   A 20 20 0 0 ${rotationDirection > 0 ? 1 : 0} ${size / 2 + 25} ${size / 2}
+                   A 18 18 0 0 ${rotationDirection > 0 ? 1 : 0} ${size / 2} ${size / 2 + 22}
+                   A 15 15 0 0 ${rotationDirection > 0 ? 1 : 0} ${size / 2 - 22} ${size / 2}
+                   A 18 18 0 0 ${rotationDirection > 0 ? 1 : 0} ${size / 2} ${size / 2 - 25}" 
+                fill="none" stroke="${color}" stroke-width="2.5" opacity="0.8">
+            <animate attributeName="stroke-width" values="2.5;3.5;2.5" dur="2s" repeatCount="indefinite"/>
+          </path>
+        </g>
+        
+        <!-- Inner spiral band -->
+        <g>
+          <animateTransform
+            attributeName="transform"
+            attributeType="XML"
+            type="rotate"
+            from="0 ${size / 2} ${size / 2}"
+            to="${360 * rotationDirection} ${size / 2} ${size / 2}"
+            dur="4s"
+            repeatCount="indefinite"/>
+          <path d="M ${size / 2} ${size / 2 - 15} 
+                   A 12 12 0 0 ${rotationDirection > 0 ? 1 : 0} ${size / 2 + 15} ${size / 2}
+                   A 10 10 0 0 ${rotationDirection > 0 ? 1 : 0} ${size / 2} ${size / 2 + 12}
+                   A 8 8 0 0 ${rotationDirection > 0 ? 1 : 0} ${size / 2 - 12} ${size / 2}
+                   A 10 10 0 0 ${rotationDirection > 0 ? 1 : 0} ${size / 2} ${size / 2 - 15}" 
+                fill="none" stroke="${color}" stroke-width="2" opacity="0.9">
+            <animate attributeName="stroke-width" values="2;3;2" dur="1.5s" repeatCount="indefinite"/>
+          </path>
+        </g>
+        
+        <!-- Main hurricane body with pulsing -->
+        <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 8}" 
+                fill="url(#hurricaneGradient${hurricane.id})" opacity="0.7" filter="url(#hurricaneGlow${hurricane.id})">
+          <animate attributeName="r" values="${size/2 - 8};${size/2 - 3};${size/2 - 8}" dur="3s" repeatCount="indefinite"/>
+        </circle>
+        
+        <!-- Eye wall with breathing effect -->
+        <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 18}" 
+                fill="none" stroke="white" stroke-width="2" opacity="0.9" filter="url(#dropShadow${hurricane.id})">
+          <animate attributeName="r" values="${size/2 - 18};${size/2 - 15};${size/2 - 18}" dur="2.5s" repeatCount="indefinite"/>
+          <animate attributeName="stroke-width" values="2;3;2" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        
+        <!-- Eye of the hurricane with pulsing -->
+        <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 22}" 
+                fill="white" opacity="0.95">
+          <animate attributeName="r" values="${size/2 - 22};${size/2 - 20};${size/2 - 22}" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2 - 25}" 
+                fill="${color}" opacity="0.3">
+          <animate attributeName="r" values="${size/2 - 25};${size/2 - 23};${size/2 - 25}" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        
+        <!-- Rain drops around the hurricane -->
+        <g>
+          <animateTransform
+            attributeName="transform"
+            attributeType="XML"
+            type="rotate"
+            from="0 ${size / 2} ${size / 2}"
+            to="${360 * rotationDirection} ${size / 2} ${size / 2}"
+            dur="5s"
+            repeatCount="indefinite"/>
+          <line x1="${size / 2 + 28}" y1="${size / 2 - 5}" x2="${size / 2 + 28}" y2="${size / 2 + 2}" 
+                stroke="lightblue" stroke-width="1" opacity="0.6">
+            <animate attributeName="opacity" values="0.6;0.2;0.6" dur="1s" repeatCount="indefinite"/>
+          </line>
+          <line x1="${size / 2 - 30}" y1="${size / 2 + 8}" x2="${size / 2 - 30}" y2="${size / 2 + 15}" 
+                stroke="lightblue" stroke-width="1" opacity="0.5">
+            <animate attributeName="opacity" values="0.5;0.1;0.5" dur="1.2s" repeatCount="indefinite"/>
+          </line>
+          <line x1="${size / 2 + 15}" y1="${size / 2 - 30}" x2="${size / 2 + 15}" y2="${size / 2 - 23}" 
+                stroke="lightblue" stroke-width="1" opacity="0.7">
+            <animate attributeName="opacity" values="0.7;0.3;0.7" dur="0.8s" repeatCount="indefinite"/>
+          </line>
+        </g>
+      </svg>
+    `
+
+    return {
+      url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
+      scaledSize: new google.maps.Size(size, size),
+      anchor: new google.maps.Point(size / 2, size / 2),
     }
   }
 
@@ -65,14 +269,20 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
   useEffect(() => {
     if (hurricaneMode) {
       fetchHurricaneData()
-      // Refresh hurricane data every 5 minutes
-      const interval = setInterval(fetchHurricaneData, 5 * 60 * 1000)
+      // Refresh hurricane data every 2 minutes to match API cache
+      const interval = setInterval(fetchHurricaneData, 2 * 60 * 1000)
       return () => clearInterval(interval)
     } else {
       // Clear hurricane data when mode is disabled
       setHurricaneData([])
+      
+      // Return to user location when hurricane mode is disabled
+      if (mapInstanceRef.current && userLocation) {
+        mapInstanceRef.current.panTo({ lat: userLocation.lat, lng: userLocation.lng })
+        mapInstanceRef.current.setZoom(13) // Reset to default zoom
+      }
     }
-  }, [hurricaneMode])
+  }, [hurricaneMode, userLocation])
 
   useEffect(() => {
     const initializeMap = async () => {
@@ -84,35 +294,37 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
 
         const apiKey = process.env.NEXT_PUBLIC_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
         if (!apiKey) {
-          throw new Error('Google Maps API key is not configured. Please add NEXT_PUBLIC_MAPS_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to your environment variables.')
+          throw new Error(
+            "Google Maps API key is not configured. Please add NEXT_PUBLIC_MAPS_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY to your environment variables.",
+          )
         }
 
         const loader = new Loader({
           apiKey: apiKey,
-          version: 'weekly',
-          libraries: ['places']
+          version: "weekly",
+          libraries: ["places"],
         })
 
         const google = await loader.load()
-        
+
         const map = new google.maps.Map(mapRef.current, {
           center: { lat: center.lat, lng: center.lng },
           zoom: 13,
           mapTypeId: google.maps.MapTypeId.ROADMAP,
           styles: [
             {
-              featureType: 'poi',
-              elementType: 'labels',
-              stylers: [{ visibility: 'off' }]
-            }
-          ]
+              featureType: "poi",
+              elementType: "labels",
+              stylers: [{ visibility: "off" }],
+            },
+          ],
         })
 
         mapInstanceRef.current = map
         setIsLoading(false)
       } catch (error) {
-        console.error('Failed to initialize map:', error)
-        setMapError('Failed to load map. Please check your API key.')
+        console.error("Failed to initialize map:", error)
+        setMapError("Failed to load map. Please check your API key.")
         setIsLoading(false)
       }
     }
@@ -124,7 +336,7 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
     if (!mapInstanceRef.current) return
 
     // Clear existing markers
-    markersRef.current.forEach(marker => marker.setMap(null))
+    markersRef.current.forEach((marker) => marker.setMap(null))
     markersRef.current = []
 
     // Add user location marker first
@@ -136,13 +348,13 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
         icon: {
           url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
             <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="10" fill="#4285F4" stroke="white" stroke-width="3"/>
+              <circle cx="12" cy="12" r="10" fill="#4285F4" stroke="white" strokeWidth="3"/>
               <circle cx="12" cy="12" r="4" fill="white"/>
             </svg>
           `)}`,
           scaledSize: new google.maps.Size(24, 24),
         },
-        zIndex: 1000 // Ensure user location is on top
+        zIndex: 1000, // Ensure user location is on top
       })
 
       const userInfoWindow = new google.maps.InfoWindow({
@@ -151,10 +363,10 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
             <h3 class="font-semibold text-sm">Your Location</h3>
             <p class="text-xs text-gray-600">Current position</p>
           </div>
-        `
+        `,
       })
 
-      userMarker.addListener('click', () => {
+      userMarker.addListener("click", () => {
         userInfoWindow.open(mapInstanceRef.current, userMarker)
       })
 
@@ -170,7 +382,7 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
         icon: {
           url: getMarkerIcon(markerData.type),
           scaledSize: new google.maps.Size(40, 40),
-        }
+        },
       })
 
       const infoWindow = new google.maps.InfoWindow({
@@ -180,24 +392,28 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
             <div class="flex items-center gap-2 mb-2">
               <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getTypeColorClass(markerData.type)}">${getTypeLabel(markerData.type)}</span>
             </div>
-            ${markerData.address ? `<p class="text-xs text-gray-600 mb-2">${markerData.address}</p>` : ''}
-            ${markerData.openNow !== undefined ? `
+            ${markerData.address ? `<p class="text-xs text-gray-600 mb-2">${markerData.address}</p>` : ""}
+            ${
+              markerData.openNow !== undefined
+                ? `
               <div class="flex items-center gap-1">
-                <div class="w-2 h-2 rounded-full ${markerData.openNow ? 'bg-green-500' : 'bg-red-500'}"></div>
-                <span class="text-xs ${markerData.openNow ? 'text-green-600' : 'text-red-600'}">
-                  ${markerData.openNow ? 'Open now' : 'Closed'}
+                <div class="w-2 h-2 rounded-full ${markerData.openNow ? "bg-green-500" : "bg-red-500"}"></div>
+                <span class="text-xs ${markerData.openNow ? "text-green-600" : "text-red-600"}">
+                  ${markerData.openNow ? "Open now" : "Closed"}
                 </span>
               </div>
-            ` : ''}
+            `
+                : ""
+            }
           </div>
-        `
+        `,
       })
 
-      marker.addListener('click', () => {
+      marker.addListener("click", () => {
         // Close all other info windows first
-        markersRef.current.forEach(m => {
+        markersRef.current.forEach((m) => {
           if (m !== marker) {
-            const infoWindow = m.get('infoWindow')
+            const infoWindow = m.get("infoWindow")
             if (infoWindow) infoWindow.close()
           }
         })
@@ -205,27 +421,27 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
       })
 
       // Store info window reference on marker
-      marker.set('infoWindow', infoWindow)
+      marker.set("infoWindow", infoWindow)
       markersRef.current.push(marker)
     })
 
     // Fit map to show all markers including user location
     const bounds = new google.maps.LatLngBounds()
-    
+
     if (userLocation) {
       bounds.extend({ lat: userLocation.lat, lng: userLocation.lng })
     }
-    
+
     if (markers.length > 0) {
-      markers.forEach(marker => {
+      markers.forEach((marker) => {
         bounds.extend({ lat: marker.lat, lng: marker.lng })
       })
     }
-    
+
     if (!bounds.isEmpty()) {
       mapInstanceRef.current.fitBounds(bounds)
       // Add some padding
-      const listener = google.maps.event.addListener(mapInstanceRef.current, 'idle', () => {
+      const listener = google.maps.event.addListener(mapInstanceRef.current, "idle", () => {
         google.maps.event.removeListener(listener)
         const currentZoom = mapInstanceRef.current?.getZoom() || 13
         if (currentZoom > 15) {
@@ -237,16 +453,30 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
     }
   }, [markers, center, userLocation])
 
+  // Handle center changes (for density zone selection)
+  useEffect(() => {
+    if (!mapInstanceRef.current) return
+    
+    // Only update center if it's different from current map center
+    const currentCenter = mapInstanceRef.current.getCenter()
+    if (currentCenter && 
+        (Math.abs(currentCenter.lat() - center.lat) > 0.001 || 
+         Math.abs(currentCenter.lng() - center.lng) > 0.001)) {
+      mapInstanceRef.current.panTo({ lat: center.lat, lng: center.lng })
+      mapInstanceRef.current.setZoom(13) // Set higher zoom for better density zone visibility
+    }
+  }, [center])
+
   // Handle density zones
   useEffect(() => {
     if (!mapInstanceRef.current) return
 
     // Clear existing density circles
-    densityCirclesRef.current.forEach(circle => circle.setMap(null))
+    densityCirclesRef.current.forEach((circle) => circle.setMap(null))
     densityCirclesRef.current = []
 
     // Add new density circles
-    densityZones.forEach(zone => {
+    densityZones.forEach((zone) => {
       const circle = new google.maps.Circle({
         strokeColor: zone.color,
         strokeOpacity: 0.8,
@@ -256,7 +486,7 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
         map: mapInstanceRef.current,
         center: { lat: zone.lat, lng: zone.lng },
         radius: zone.radius,
-        clickable: true
+        clickable: true,
       })
 
       // Add info window for density zone
@@ -271,12 +501,12 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
               </div>
               <div class="flex justify-between">
                 <span>Density:</span>
-                <span class="font-medium">${zone.density.replace('_', ' ')}</span>
+                <span class="font-medium">${zone.density.replace("_", " ")}</span>
               </div>
               <div class="flex justify-between">
                 <span>Risk Level:</span>
-                <span class="font-medium text-${zone.riskLevel === 'high' ? 'red' : zone.riskLevel === 'medium' ? 'yellow' : 'green'}-600">
-                  ${zone.riskLevel.replace('_', ' ')}
+                <span class="font-medium text-${zone.riskLevel === "high" ? "red" : zone.riskLevel === "medium" ? "yellow" : "green"}-600">
+                  ${zone.riskLevel.replace("_", " ")}
                 </span>
               </div>
               <div class="flex justify-between">
@@ -288,10 +518,10 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
               </div>
             </div>
           </div>
-        `
+        `,
       })
 
-      circle.addListener('click', () => {
+      circle.addListener("click", () => {
         infoWindow.setPosition({ lat: zone.lat, lng: zone.lng })
         infoWindow.open(mapInstanceRef.current)
       })
@@ -302,41 +532,34 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
 
   // Handle hurricane markers and paths
   useEffect(() => {
-    if (!mapInstanceRef.current || !hurricaneMode) {
-      // Clear hurricane markers when mode is disabled
-      hurricaneMarkersRef.current.forEach(marker => marker.setMap(null))
-      hurricaneMarkersRef.current = []
-      hurricanePathsRef.current.forEach(path => path.setMap(null))
-      hurricanePathsRef.current = []
+    if (!mapInstanceRef.current) return
+
+    // Always clear existing hurricane markers first
+    hurricaneMarkersRef.current.forEach((marker) => marker.setMap(null))
+    hurricaneMarkersRef.current = []
+    hurricanePathsRef.current.forEach((path) => path.setMap(null))
+    hurricanePathsRef.current = []
+
+    // Only add hurricane markers if hurricane mode is enabled AND we have data
+    if (!hurricaneMode || hurricaneData.length === 0) {
       return
     }
 
-    // Clear existing hurricane markers and paths
-    hurricaneMarkersRef.current.forEach(marker => marker.setMap(null))
-    hurricaneMarkersRef.current = []
-    hurricanePathsRef.current.forEach(path => path.setMap(null))
-    hurricanePathsRef.current = []
-
     // Add hurricane markers and paths
-    hurricaneData.forEach(hurricane => {
+    hurricaneData.forEach((hurricane) => {
+      // Create animated hurricane icon
+      const hurricaneIcon = createAnimatedHurricaneIcon(hurricane)
+
       // Add current position marker
       const marker = new google.maps.Marker({
         position: {
           lat: hurricane.currentPosition.lat,
-          lng: hurricane.currentPosition.lng
+          lng: hurricane.currentPosition.lng,
         },
         map: mapInstanceRef.current,
         title: `${hurricane.name} - ${hurricane.currentPosition.windSpeed} mph`,
-        icon: {
-          url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-            <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="20" cy="20" r="18" fill="${getHurricaneColor(hurricane.currentPosition.category || 0)}" stroke="white" stroke-width="3"/>
-              <text x="20" y="26" text-anchor="middle" fill="white" font-size="16" font-weight="bold">🌀</text>
-            </svg>
-          `)}`,
-          scaledSize: new google.maps.Size(40, 40),
-        },
-        zIndex: 2000 // Higher than resource markers
+        icon: hurricaneIcon,
+        zIndex: 2000, // Higher than resource markers
       })
 
       // Add info window for hurricane
@@ -350,51 +573,92 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
               </span>
             </div>
             <p class="text-xs text-gray-600 mb-1">Wind Speed: ${hurricane.currentPosition.windSpeed} mph</p>
-            ${hurricane.currentPosition.pressure ? `<p class="text-xs text-gray-600 mb-1">Pressure: ${hurricane.currentPosition.pressure} mb</p>` : ''}
+            ${hurricane.currentPosition.pressure ? `<p class="text-xs text-gray-600 mb-1">Pressure: ${hurricane.currentPosition.pressure} mb</p>` : ""}
             <p class="text-xs text-gray-600">Status: ${hurricane.status}</p>
           </div>
-        `
+        `,
       })
 
-      marker.addListener('click', () => {
+      marker.addListener("click", () => {
         // Close all other info windows first
-        hurricaneMarkersRef.current.forEach(m => {
+        hurricaneMarkersRef.current.forEach((m) => {
           if (m !== marker) {
-            const infoWindow = m.get('infoWindow')
+            const infoWindow = m.get("infoWindow")
             if (infoWindow) infoWindow.close()
           }
         })
         infoWindow.open(mapInstanceRef.current, marker)
       })
 
-      marker.set('infoWindow', infoWindow)
+      marker.set("infoWindow", infoWindow)
       hurricaneMarkersRef.current.push(marker)
 
-      // Add forecast path (dotted line)
+      // Add wind radius circle
+      const windRadius = hurricane.currentPosition.windSpeed * 1000
+      const category = hurricane.currentPosition.category || 0
+      const color = getHurricaneColor(category)
+
+      if (windRadius > 0) {
+        const windCircle = new google.maps.Circle({
+          center: { lat: hurricane.currentPosition.lat, lng: hurricane.currentPosition.lng },
+          radius: windRadius,
+          strokeColor: color,
+          strokeOpacity: 0.5,
+          strokeWeight: 2,
+          fillColor: color,
+          fillOpacity: 0.1,
+          map: mapInstanceRef.current,
+        })
+
+        densityCirclesRef.current.push(windCircle)
+      }
+
+      // Add animated forecast path with moving dashes
       if (hurricane.forecastPositions.length > 0) {
         const pathCoordinates = [
           { lat: hurricane.currentPosition.lat, lng: hurricane.currentPosition.lng },
-          ...hurricane.forecastPositions.map(pos => ({ lat: pos.lat, lng: pos.lng }))
+          ...hurricane.forecastPositions.map((pos) => ({ lat: pos.lat, lng: pos.lng })),
         ]
+
+        // Calculate movement direction for animation
+        const currentPos = hurricane.currentPosition
+        const nextPos = hurricane.forecastPositions[0]
+        const movementDirection = nextPos
+          ? (Math.atan2(nextPos.lng - currentPos.lng, nextPos.lat - currentPos.lat) * 180) / Math.PI
+          : 0
 
         const path = new google.maps.Polyline({
           path: pathCoordinates,
           geodesic: true,
           strokeColor: getHurricaneColor(hurricane.currentPosition.category || 0),
-          strokeOpacity: 0.8,
+          strokeOpacity: 0.7,
           strokeWeight: 3,
-          icons: [{
-            icon: {
-              path: google.maps.SymbolPath.CIRCLE,
-              scale: 3,
-              strokeColor: getHurricaneColor(hurricane.currentPosition.category || 0),
-              strokeOpacity: 1,
-              strokeWeight: 2,
+          icons: [
+            {
+              icon: {
+                path: "M 0,-1 0,1",
+                strokeColor: getHurricaneColor(hurricane.currentPosition.category || 0),
+                strokeOpacity: 1,
+                strokeWeight: 2,
+              },
+              offset: "0%",
+              repeat: "20px",
             },
-            offset: '0%',
-            repeat: '20px'
-          }],
-          map: mapInstanceRef.current
+            // Moving arrow at the end
+            {
+              icon: {
+                path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                strokeColor: getHurricaneColor(hurricane.currentPosition.category || 0),
+                strokeOpacity: 1,
+                strokeWeight: 2,
+                fillColor: getHurricaneColor(hurricane.currentPosition.category || 0),
+                fillOpacity: 0.8,
+                scale: 3,
+              },
+              offset: "100%",
+            },
+          ],
+          map: mapInstanceRef.current,
         })
 
         hurricanePathsRef.current.push(path)
@@ -403,17 +667,29 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
       // Add historical path (solid line)
       if (hurricane.historicalPositions.length > 0) {
         const historicalPath = [
-          ...hurricane.historicalPositions.map(pos => ({ lat: pos.lat, lng: pos.lng })),
-          { lat: hurricane.currentPosition.lat, lng: hurricane.currentPosition.lng }
+          ...hurricane.historicalPositions.map((pos) => ({ lat: pos.lat, lng: pos.lng })),
+          { lat: hurricane.currentPosition.lat, lng: hurricane.currentPosition.lng },
         ]
 
         const historicalLine = new google.maps.Polyline({
           path: historicalPath,
           geodesic: true,
           strokeColor: getHurricaneColor(hurricane.currentPosition.category || 0),
-          strokeOpacity: 0.6,
+          strokeOpacity: 0.4,
           strokeWeight: 2,
-          map: mapInstanceRef.current
+          icons: [
+            {
+              icon: {
+                path: "M 0,-1 0,1",
+                strokeColor: getHurricaneColor(hurricane.currentPosition.category || 0),
+                strokeOpacity: 0.4,
+                strokeWeight: 1,
+              },
+              offset: "0%",
+              repeat: "15px",
+            },
+          ],
+          map: mapInstanceRef.current,
         })
 
         hurricanePathsRef.current.push(historicalLine)
@@ -423,20 +699,20 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
     // Adjust map bounds to include hurricanes if in hurricane mode
     if (hurricaneData.length > 0) {
       const bounds = new google.maps.LatLngBounds()
-      
+
       // Add user location if available
       if (userLocation) {
         bounds.extend({ lat: userLocation.lat, lng: userLocation.lng })
       }
-      
+
       // Add hurricane positions
-      hurricaneData.forEach(hurricane => {
+      hurricaneData.forEach((hurricane) => {
         bounds.extend({ lat: hurricane.currentPosition.lat, lng: hurricane.currentPosition.lng })
-        hurricane.forecastPositions.forEach(pos => {
+        hurricane.forecastPositions.forEach((pos) => {
           bounds.extend({ lat: pos.lat, lng: pos.lng })
         })
       })
-      
+
       if (!bounds.isEmpty()) {
         mapInstanceRef.current.fitBounds(bounds)
       }
@@ -445,21 +721,21 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
 
   const getMarkerIcon = (type: MapMarker["type"]) => {
     const colors = {
-      shelter: '#dc2626', // red
-      food_bank: '#2563eb', // blue
-      clinic: '#16a34a', // green
+      shelter: "#dc2626", // red
+      food_bank: "#2563eb", // blue
+      clinic: "#16a34a", // green
     }
-    
+
     const icons = {
-      shelter: '🏠',
-      food_bank: '🍽️',
-      clinic: '🏥'
+      shelter: "🏠",
+      food_bank: "🍽️",
+      clinic: "🏥",
     }
-    
+
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
       <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="20" cy="20" r="16" fill="${colors[type]}" stroke="white" stroke-width="3"/>
-        <text x="20" y="26" text-anchor="middle" fill="white" font-size="16" font-weight="bold">
+        <circle cx="20" cy="20" r="16" fill="${colors[type]}" stroke="white" strokeWidth="3"/>
+        <text x="20" y="26" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold">
           ${icons[type]}
         </text>
       </svg>
@@ -507,34 +783,52 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
 
   const getHurricaneColor = (category: number): string => {
     switch (category) {
-      case 5: return '#8B0000' // Dark red
-      case 4: return '#FF0000' // Red
-      case 3: return '#FF8C00' // Orange
-      case 2: return '#FFD700' // Gold
-      case 1: return '#FFFF00' // Yellow
-      default: return '#00FF00' // Green (tropical storm)
+      case 5:
+        return "#8B0000" // Dark red
+      case 4:
+        return "#FF0000" // Red
+      case 3:
+        return "#FF8C00" // Orange
+      case 2:
+        return "#FFD700" // Gold
+      case 1:
+        return "#FFFF00" // Yellow
+      default:
+        return "#00FF00" // Green (tropical storm)
     }
   }
 
   const getHurricaneCategoryLabel = (category: number): string => {
     switch (category) {
-      case 5: return 'Category 5'
-      case 4: return 'Category 4'
-      case 3: return 'Category 3'
-      case 2: return 'Category 2'
-      case 1: return 'Category 1'
-      default: return 'Tropical Storm'
+      case 5:
+        return "Category 5"
+      case 4:
+        return "Category 4"
+      case 3:
+        return "Category 3"
+      case 2:
+        return "Category 2"
+      case 1:
+        return "Category 1"
+      default:
+        return "Tropical Storm"
     }
   }
 
   const getHurricaneCategoryClass = (category: number): string => {
     switch (category) {
-      case 5: return 'bg-red-900 text-white'
-      case 4: return 'bg-red-800 text-white'
-      case 3: return 'bg-orange-600 text-white'
-      case 2: return 'bg-yellow-500 text-black'
-      case 1: return 'bg-yellow-300 text-black'
-      default: return 'bg-green-500 text-white'
+      case 5:
+        return "bg-red-900 text-white"
+      case 4:
+        return "bg-red-800 text-white"
+      case 3:
+        return "bg-orange-600 text-white"
+      case 2:
+        return "bg-yellow-500 text-black"
+      case 1:
+        return "bg-yellow-300 text-black"
+      default:
+        return "bg-green-500 text-white"
     }
   }
 
@@ -556,7 +850,7 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
             </div>
           </div>
         </div>
-        
+
         {/* Show resource cards even when map fails */}
         {markers.length > 0 && (
           <div className="absolute top-4 left-4 right-4 space-y-2 max-h-64 overflow-y-auto">
@@ -595,11 +889,8 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
   return (
     <div className="h-full relative bg-muted">
       {/* Google Maps Container */}
-      <div
-        ref={mapRef}
-        className="w-full h-full"
-      />
-      
+      <div ref={mapRef} className="w-full h-full" />
+
       {/* Loading Overlay */}
       {isLoading && (
         <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
@@ -618,16 +909,35 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
               <h3 className="font-semibold text-orange-900 mb-1 flex items-center gap-2">
                 🌀 Active Hurricanes ({hurricaneData.length})
               </h3>
-              <p className="text-xs text-orange-700">Click markers for details</p>
+              <p className="text-xs text-orange-700">Click to center map on hurricane</p>
             </div>
-            
+
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {hurricaneData.map((hurricane) => (
-                <div key={hurricane.id} className="flex items-center gap-2 p-2 rounded bg-orange-100/50 hover:bg-orange-100/70 transition-colors">
-                  <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: getHurricaneColor(hurricane.currentPosition.category || 0) }}></div>
+                <div
+                  key={hurricane.id}
+                  className="group flex items-center gap-2 p-2 rounded bg-orange-100/50 hover:bg-orange-100/70 hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer"
+                  onClick={() => {
+                    if (mapInstanceRef.current) {
+                      const position = {
+                        lat: hurricane.currentPosition.lat,
+                        lng: hurricane.currentPosition.lng
+                      }
+                      mapInstanceRef.current.panTo(position)
+                      mapInstanceRef.current.setZoom(8) // Moderate zoom to show hurricane location
+                    }
+                  }}
+                >
+                  <div
+                    className={`w-3 h-3 rounded-full transition-all duration-200 group-hover:scale-125 group-hover:shadow-sm`}
+                    style={{ backgroundColor: getHurricaneColor(hurricane.currentPosition.category || 0) }}
+                  ></div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-orange-900 truncate">{hurricane.name}</p>
-                    <p className="text-xs text-orange-700">{getHurricaneCategoryLabel(hurricane.currentPosition.category || 0)} - {hurricane.currentPosition.windSpeed} mph</p>
+                    <p className="text-sm font-medium text-orange-900 truncate group-hover:text-orange-800 transition-colors">{hurricane.name}</p>
+                    <p className="text-xs text-orange-700 group-hover:text-orange-600 transition-colors">
+                      {getHurricaneCategoryLabel(hurricane.currentPosition.category || 0)} -{" "}
+                      {hurricane.currentPosition.windSpeed} mph
+                    </p>
                   </div>
                 </div>
               ))}
@@ -642,7 +952,9 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
           <Card className="p-4 bg-card/95 backdrop-blur-sm border shadow-lg">
             <div className="mb-3 flex items-start justify-between">
               <div>
-                <h3 className="font-semibold text-card-foreground mb-1">Found {markers.length} Resource{markers.length !== 1 ? 's' : ''}</h3>
+                <h3 className="font-semibold text-card-foreground mb-1">
+                  Found {markers.length} Resource{markers.length !== 1 ? "s" : ""}
+                </h3>
                 <p className="text-xs text-muted-foreground">Click markers for details</p>
               </div>
               {onCloseResultsPanel && (
@@ -656,37 +968,45 @@ export function MapPanel({ markers, center, userLocation, hurricaneMode = false,
                 </Button>
               )}
             </div>
-            
+
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {markers.slice(0, 3).map((marker) => (
-                <div key={marker.id} className="flex items-center gap-2 p-2 rounded bg-muted/50 hover:bg-muted/70 transition-colors cursor-pointer" onClick={() => {
-                  // Find and click the corresponding marker
-                  const markerElement = markersRef.current.find(m => m.getTitle() === marker.name)
-                  if (markerElement) {
-                    google.maps.event.trigger(markerElement, 'click')
-                  }
-                }}>
-                  <div className={`w-3 h-3 rounded-full ${marker.type === 'shelter' ? 'bg-red-500' : marker.type === 'food_bank' ? 'bg-blue-500' : 'bg-green-500'}`}></div>
+                <div
+                  key={marker.id}
+                  className="flex items-center gap-2 p-2 rounded bg-muted/50 hover:bg-muted/70 transition-colors cursor-pointer"
+                  onClick={() => {
+                    // Find and click the corresponding marker
+                    const markerElement = markersRef.current.find((m) => m.getTitle() === marker.name)
+                    if (markerElement) {
+                      google.maps.event.trigger(markerElement, "click")
+                    }
+                  }}
+                >
+                  <div
+                    className={`w-3 h-3 rounded-full ${marker.type === "shelter" ? "bg-red-500" : marker.type === "food_bank" ? "bg-blue-500" : "bg-green-500"}`}
+                  ></div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-card-foreground truncate">{marker.name}</p>
                     <p className="text-xs text-muted-foreground">{getTypeLabel(marker.type)}</p>
                   </div>
                   {marker.openNow !== undefined && (
-                    <div className={`w-2 h-2 rounded-full ${marker.openNow ? 'bg-green-500' : 'bg-red-500'}`} title={marker.openNow ? 'Open now' : 'Closed'}></div>
+                    <div
+                      className={`w-2 h-2 rounded-full ${marker.openNow ? "bg-green-500" : "bg-red-500"}`}
+                      title={marker.openNow ? "Open now" : "Closed"}
+                    ></div>
                   )}
                 </div>
               ))}
-              
+
               {markers.length > 3 && (
                 <p className="text-xs text-muted-foreground text-center pt-2">
-                  +{markers.length - 3} more resource{markers.length - 3 !== 1 ? 's' : ''}
+                  +{markers.length - 3} more resource{markers.length - 3 !== 1 ? "s" : ""}
                 </p>
               )}
             </div>
           </Card>
         </div>
       )}
-
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { GoogleWeatherService } from '@/lib/google-weather-service';
 
 interface WeatherResponse {
   current: {
@@ -40,51 +41,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const { lat = '25.774', lng = '-80.193' } = req.query; // Default to Miami coordinates
 
   try {
-    // Fetch current weather data from OpenWeatherMap
-    const weatherApiKey = process.env.OPENWEATHER_API_KEY;
-    if (!weatherApiKey) {
-      console.warn('OpenWeather API key not found, using mock data');
-      return res.status(200).json(getMockWeatherData(lat as string, lng as string));
-    }
-
-    const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${weatherApiKey}&units=imperial`;
-    const weatherResponse = await fetch(weatherUrl);
-    
-    if (!weatherResponse.ok) {
-      console.warn('Weather API failed, using mock data');
-      return res.status(200).json(getMockWeatherData(lat as string, lng as string));
-    }
-
-    const weatherData = await weatherResponse.json();
+    const googleWeatherService = GoogleWeatherService.getInstance();
+    const weatherData = await googleWeatherService.getCurrentWeather(
+      parseFloat(lat as string), 
+      parseFloat(lng as string)
+    );
     
     // Fetch severe weather alerts from National Weather Service
     const alerts = await fetchWeatherAlerts(lat as string, lng as string);
 
     const response: WeatherResponse = {
-      current: {
-        temperature: Math.round(weatherData.main.temp),
-        condition: weatherData.weather[0].main,
-        humidity: weatherData.main.humidity,
-        windSpeed: weatherData.wind.speed,
-        windDirection: weatherData.wind.deg,
-        pressure: weatherData.main.pressure,
-        visibility: weatherData.visibility / 1609.34, // Convert meters to miles
-        uvIndex: 0, // Would need additional API call for UV index
-        timestamp: new Date().toISOString(),
-      },
+      current: weatherData.current,
       alerts,
-      location: {
-        name: weatherData.name,
-        lat: parseFloat(lat as string),
-        lng: parseFloat(lng as string),
-      },
+      location: weatherData.location,
     };
 
     res.status(200).json(response);
   } catch (error) {
     console.error('Weather API error:', error);
-    // Return mock data as fallback
-    res.status(200).json(getMockWeatherData(lat as string, lng as string));
+    res.status(500).json({ 
+      error: 'Failed to fetch real-time weather data',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 }
 
@@ -153,27 +131,6 @@ function mapAlertType(event: string): WeatherAlert['type'] {
   return 'other';
 }
 
-function getMockWeatherData(lat: string, lng: string): WeatherResponse {
-  return {
-    current: {
-      temperature: 82,
-      condition: 'Partly Cloudy',
-      humidity: 75,
-      windSpeed: 12,
-      windDirection: 180,
-      pressure: 30.15,
-      visibility: 10,
-      uvIndex: 7,
-      timestamp: new Date().toISOString(),
-    },
-    alerts: getMockAlerts(),
-    location: {
-      name: 'Miami, FL',
-      lat: parseFloat(lat),
-      lng: parseFloat(lng),
-    },
-  };
-}
 
 function getMockAlerts(): WeatherAlert[] {
   // Check if it's hurricane season (June 1 - November 30)

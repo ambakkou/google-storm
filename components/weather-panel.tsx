@@ -31,13 +31,18 @@ export function WeatherPanel({ lat, lng, onAlertClick }: WeatherPanelProps) {
   const [weatherData, setWeatherData] = useState<WeatherResponse | null>(null)
   const [forecastData, setForecastData] = useState<ForecastResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isExpanded, setIsExpanded] = useState(false)
   const weatherService = WeatherService.getInstance()
 
-  const fetchWeatherData = async () => {
+  const fetchWeatherData = async (isRefresh = false) => {
     try {
-      setIsLoading(true)
+      if (isRefresh) {
+        setIsRefreshing(true)
+      } else {
+        setIsLoading(true)
+      }
       setError(null)
       
       const [currentWeather, forecast] = await Promise.all([
@@ -52,14 +57,15 @@ export function WeatherPanel({ lat, lng, onAlertClick }: WeatherPanelProps) {
       setError('Failed to load weather data')
     } finally {
       setIsLoading(false)
+      setIsRefreshing(false)
     }
   }
 
   useEffect(() => {
-    fetchWeatherData()
+    fetchWeatherData(false)
     
     // Refresh every 10 minutes
-    const interval = setInterval(fetchWeatherData, 10 * 60 * 1000)
+    const interval = setInterval(() => fetchWeatherData(false), 10 * 60 * 1000)
     return () => clearInterval(interval)
   }, [lat, lng])
 
@@ -94,7 +100,7 @@ export function WeatherPanel({ lat, lng, onAlertClick }: WeatherPanelProps) {
         <CardContent>
           <div className="text-center py-4">
             <p className="text-sm text-muted-foreground mb-4">{error || 'Unable to load weather data'}</p>
-            <Button onClick={fetchWeatherData} size="sm">
+            <Button onClick={() => fetchWeatherData(false)} size="sm">
               <RefreshCw className="w-4 h-4 mr-2" />
               Retry
             </Button>
@@ -133,8 +139,16 @@ export function WeatherPanel({ lat, lng, onAlertClick }: WeatherPanelProps) {
               </div>
               <div className="flex items-center gap-2">
                 {isExpanded && (
-                  <Button onClick={fetchWeatherData} size="sm" variant="outline">
-                    <RefreshCw className="w-4 h-4" />
+                  <Button 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      fetchWeatherData(true)
+                    }} 
+                    size="sm" 
+                    variant="outline"
+                    disabled={isRefreshing}
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
                   </Button>
                 )}
                 {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
